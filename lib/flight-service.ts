@@ -40,23 +40,31 @@ export async function resolveFlightInstance(
   flightNumber: string
 ): Promise<ResolvedFlightInstance | null> {
 
-  const departures = await getAirportDepartures(originAirport);
+  const response = await safeFetch<
+    Array<{
+      flight_iata?: string
+      dep_iata?: string
+      arr_iata?: string
+      dep_time?: string
+      arr_time?: string
+    }>
+  >("/flights", {
+    flight_iata: flightNumber
+  })
 
-  if (!departures) return null;
+  if (!response || response.length === 0) {
+    return null
+  }
 
-  const match = departures.find(
-    f => f.flightNumber?.toUpperCase() === flightNumber.toUpperCase()
-  );
-
-  if (!match) return null;
+  const flight = response[0]
 
   return {
-    flightId: flightNumber,
-    origin: originAirport,
-    destination: match.destination ?? "",
-    scheduledDeparture: match.departureTime ?? null,
-    scheduledArrival: match.arrivalTime ?? null
-  };
+    flightId: flight.flight_iata ?? flightNumber,
+    origin: flight.dep_iata ?? originAirport,
+    destination: flight.arr_iata ?? "",
+    scheduledDeparture: flight.dep_time ?? null,
+    scheduledArrival: flight.arr_time ?? null
+  }
 }
 
 export type FlightStatus = {
