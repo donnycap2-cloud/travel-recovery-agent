@@ -47,9 +47,8 @@ export async function resolveFlightInstance(
       dep_time?: string;
       arr_time?: string;
     }>
-  >("/flights", {
-    airline_iata: airlineCode,
-    flight_number: flightNumber
+  >("/schedules", {
+    flight_iata: `${airlineCode}${flightNumber}`
   });
 
   if (!response || response.length === 0) {
@@ -65,7 +64,6 @@ export async function resolveFlightInstance(
     scheduledDeparture: flight.dep_time ?? null,
     scheduledArrival: flight.arr_time ?? null
   };
-}
 
 export type FlightStatus = {
   flightNumber: string;
