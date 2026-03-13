@@ -8,6 +8,9 @@ export interface TripRow {
   flight_number_f1: string;
   flight_number_f2: string;
 
+  flight_id_f1: string | null;
+  flight_id_f2: string | null;
+
   origin_airport: string;
   connection_airport: string;
   destination_airport: string;
@@ -20,6 +23,8 @@ export interface TripRow {
 
   estimated_arrival_f1: string | null;
   estimated_departure_f2: string | null;
+
+  actual_departure_f2: string | null;
 
   monitoring_state: string | null;
   connection_time_remaining: number | null;
