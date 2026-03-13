@@ -20,10 +20,9 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   const windowEnd = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
 
   const { data: trips, error } = await supabase
-    .from("trips")
-    .select("*")
-    .eq("status", "active")
-    .lte("scheduled_departure_f1", windowEnd);
+  .from("trips")
+  .select("*")
+  .eq("status", "active");
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
@@ -34,36 +33,43 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   for (const raw of trips as TripRow[]) {
     const trip = raw;
 
-    if (!trip.flight_id_f1 || !trip.flight_id_f2 || !trip.scheduled_departure_f2) {
+    if (!trip.flight_number_f1 || !trip.flight_number_f2 || !trip.scheduled_departure_f2) {
       continue;
     }
 
     // 2. Fetch status for both legs
     const [statusF1, statusF2] = await Promise.all([
-      getFlightStatus(trip.flight_id_f1),
-      getFlightStatus(trip.flight_id_f2)
+      getFlightStatus(trip.flight_number_f1),
+      getFlightStatus(trip.flight_number_f2)
     ]);
 
     // 3. Determine estimated arrival for flight 1
     // Prefer: arr_actual -> arr_estimated -> arr_time.
     // Our flight-status helper exposes only estimated; fall back to scheduled from trip.
-    const estimatedArrivalF1Seconds =
+    const arrivalF1Seconds =
+      toEpochSeconds(statusF1?.actualArrival ?? null) ??
       toEpochSeconds(statusF1?.estimatedArrival ?? null) ??
       toEpochSeconds(trip.estimated_arrival_f1) ??
       toEpochSeconds(trip.scheduled_arrival_f1);
 
-    // 4. Scheduled departure of flight 2 from DB
-    const scheduledDepartureF2Seconds = toEpochSeconds(trip.scheduled_departure_f2);
+    // Determine departure time of flight 2
+    // Prefer: actual -> estimated -> scheduled
+    const departureF2Seconds =
+      toEpochSeconds(statusF2?.actualDeparture ?? null) ??
+      toEpochSeconds(statusF2?.estimatedDeparture ?? null) ??
+      toEpochSeconds(trip.estimated_departure_f2) ??
+      toEpochSeconds(trip.scheduled_departure_f2);
 
-    if (estimatedArrivalF1Seconds == null || scheduledDepartureF2Seconds == null) {
+    if (arrivalF1Seconds == null || departureF2Seconds == null) {
       continue;
     }
 
     // 5. Run risk calculation. For now, assume a 60-minute MCT.
-    const mctMinutes = 60;
+    const DEFAULT_MCT_MINUTES = 60;
+    const mctMinutes = DEFAULT_MCT_MINUTES;
     const risk = calculateConnectionRisk(
-      estimatedArrivalF1Seconds,
-      scheduledDepartureF2Seconds,
+      arrivalF1Seconds,
+      departureF2Seconds,
       mctMinutes
     );
 
@@ -94,13 +100,13 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       .eq("id", trip.id);
 
     // 9–10. Landing plan actions
-    if (newState === "likely_missed") {
+    if (previousState !== "likely_missed" && newState === "likely_missed") {
       await supabase.from("landing_plans").insert({
         trip_id: trip.id,
         created_at: new Date().toISOString(),
         reason: "connection risk"
       } satisfies Partial<LandingPlanRow>);
-    } else if (newState === "impossible") {
+    } else if (previousState !== "impossible" && newState === "impossible") {
       // Update most recent landing plan for this trip, or create one if none exist.
       const { data: existingPlans } = await supabase
         .from("landing_plans")
