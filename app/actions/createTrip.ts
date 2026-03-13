@@ -38,6 +38,13 @@ export async function createTripAndRedirect(args: {
     return null;
   }
 
+  console.log("Creating trip with:", {
+    scheduledDepartureF1,
+    scheduledArrivalF1,
+    scheduledDepartureF2,
+    scheduledArrivalF2
+  });
+
   const { data, error } = await supabase
     .from("trips")
     .insert({
@@ -48,11 +55,11 @@ export async function createTripAndRedirect(args: {
       connection_airport: connectionAirport,
       destination_airport: destinationAirport,
 
-      scheduled_departure_f1: normalizeTimestamp(scheduledDepartureF1),
-      scheduled_arrival_f1: normalizeTimestamp(scheduledArrivalF1),
-      
-      scheduled_departure_f2: normalizeTimestamp(scheduledDepartureF2),
-      scheduled_arrival_f2: normalizeTimestamp(scheduledArrivalF2),
+      scheduled_departure_f1: scheduledDepartureF1,
+      scheduled_arrival_f1: scheduledArrivalF1,
+    
+      scheduled_departure_f2: scheduledDepartureF2,
+      scheduled_arrival_f2: scheduledArrivalF2,
 
       monitoring_state: "safe",
       status: "active"
