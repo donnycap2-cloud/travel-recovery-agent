@@ -4,18 +4,18 @@ import { supabase } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 
 export async function createTripAndRedirect(args: {
-  flight_number_f1: string;
-  flight_number_f2: string;
+  flight1Number: string;
+  flight2Number: string;
   connectionAirport: string;
   destinationAirport: string;
 }) {
-  const { flight_number_f1, flight_number_f2, connectionAirport, destinationAirport } = args;
+  const { flight1Number, flight2Number, connectionAirport, destinationAirport } = args;
 
   const { data, error } = await supabase
     .from("trips")
     .insert({
-      flight_number_f1: flight_number_f1,
-      flight_number_f2: flight_number_f2,
+      flight_1_number: flight1Number,
+      flight_2_number: flight2Number,
       connection_airport: connectionAirport,
       destination_airport: destinationAirport,
       monitoring_state: "safe"
