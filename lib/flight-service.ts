@@ -53,8 +53,11 @@ export async function resolveFlightInstance(
   })
 
   if (!response || response.length === 0) {
+    console.log("AirLabs flight lookup returned nothing:", flightNumber)
     return null
   }
+  
+  console.log("AirLabs flight lookup result:", response[0])
 
   const flight = response[0]
 
