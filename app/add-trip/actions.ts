@@ -1,11 +1,11 @@
 "use server";
 
 type FlightLeg = {
-  flightNumber: string;
-  origin: string;
-  destination: string;
-  arrivalTime?: string;
-  departureTime?: string;
+  flightNumber: string
+  origin: string
+  destination: string
+  departureTime: string | null
+  arrivalTime: string | null
 };
 
 export type FetchFlightDataState =
@@ -20,10 +20,10 @@ export type FetchFlightDataState =
       values: { flight1: string; flight2: string; date: string };
       data: {
         flight1: Required<
-          Pick<FlightLeg, "flightNumber" | "origin" | "destination" | "arrivalTime">
+          Pick<FlightLeg, "flightNumber" | "origin" | "destination" | "arrivalTime" | "departureTime">
         >;
         flight2: Required<
-          Pick<FlightLeg, "flightNumber" | "origin" | "destination" | "departureTime">
+          Pick<FlightLeg, "flightNumber" | "origin" | "destination" | "arrivalTime" | "departureTime">
         >;
         connectionMinutes: number;
       };
@@ -118,19 +118,25 @@ export async function fetchFlightData(
 
   return {
     status: "success",
-    values: { flight1, flight2, date },
+    values: {
+      flight1,
+      flight2,
+      date
+    },
     data: {
       flight1: {
         flightNumber: flight1,
         origin,
         destination: connection,
+        departureTime: formatTime(new Date(arrive.getTime() - 2 * 60 * 60 * 1000)),
         arrivalTime: formatTime(arrive)
       },
       flight2: {
         flightNumber: flight2,
         origin: connection,
         destination,
-        departureTime: formatTime(depart)
+        departureTime: formatTime(depart),
+        arrivalTime: formatTime(new Date(depart.getTime() + 2 * 60 * 60 * 1000))
       },
       connectionMinutes
     }

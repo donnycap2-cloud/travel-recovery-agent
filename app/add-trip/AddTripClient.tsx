@@ -81,7 +81,13 @@ export function AddTripClient() {
                 flight2Number: flight2.flightNumber,
                 originAirport: flight1.origin,
                 connectionAirport,
-                destinationAirport
+                destinationAirport,
+              
+                scheduledDepartureF1: flight1.departureTime,
+                scheduledArrivalF1: flight1.arrivalTime,
+              
+                scheduledDepartureF2: flight2.departureTime,
+                scheduledArrivalF2: flight2.arrivalTime
               })
             }
           >
