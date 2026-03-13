@@ -3,55 +3,21 @@
 import { supabase } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 
-export async function createTripAndRedirect(args: {
-  flight1Number: string;
-  flight2Number: string;
-  originAirport: string;
-  connectionAirport: string;
-  destinationAirport: string;
+export async function createTripAndRedirect(formData: FormData) {
 
-  scheduledDepartureF1: string | null;
-  scheduledArrivalF1: string | null;
+  const flight1Number = formData.get("flight1Number") as string;
+  const flight2Number = formData.get("flight2Number") as string;
 
-  scheduledDepartureF2: string | null;
-  scheduledArrivalF2: string | null;
-}) {
+  const originAirport = formData.get("originAirport") as string;
+  const connectionAirport = formData.get("connectionAirport") as string;
+  const destinationAirport = formData.get("destinationAirport") as string;
 
-  const {
-    flight1Number,
-    flight2Number,
-    originAirport,
-    connectionAirport,
-    destinationAirport,
-    scheduledDepartureF1,
-    scheduledArrivalF1,
-    scheduledDepartureF2,
-    scheduledArrivalF2
-  } = args;
+  const scheduledDepartureF1 = formData.get("scheduledDepartureF1") as string | null;
+  const scheduledArrivalF1 = formData.get("scheduledArrivalF1") as string | null;
 
-  function normalizeTimestamp(value: string | null) {
-    if (!value) return null;
-  
-    const d = new Date(value);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  
-    return null;
-  }
+  const scheduledDepartureF2 = formData.get("scheduledDepartureF2") as string | null;
+  const scheduledArrivalF2 = formData.get("scheduledArrivalF2") as string | null;
 
-  console.log("Creating trip with:", {
-    scheduledDepartureF1,
-    scheduledArrivalF1,
-    scheduledDepartureF2,
-    scheduledArrivalF2
-  });
-
-  console.log("Normalized timestamps:", {
-    f1_depart: normalizeTimestamp(scheduledDepartureF1),
-    f1_arrive: normalizeTimestamp(scheduledArrivalF1),
-    f2_depart: normalizeTimestamp(scheduledDepartureF2),
-    f2_arrive: normalizeTimestamp(scheduledArrivalF2),
-  });
-  
   const { data, error } = await supabase
     .from("trips")
     .insert({
@@ -62,11 +28,11 @@ export async function createTripAndRedirect(args: {
       connection_airport: connectionAirport,
       destination_airport: destinationAirport,
 
-      scheduled_departure_f1: normalizeTimestamp(scheduledDepartureF1),
-      scheduled_arrival_f1: normalizeTimestamp(scheduledArrivalF1),
-      
-      scheduled_departure_f2: normalizeTimestamp(scheduledDepartureF2),
-      scheduled_arrival_f2: normalizeTimestamp(scheduledArrivalF2),
+      scheduled_departure_f1: scheduledDepartureF1,
+      scheduled_arrival_f1: scheduledArrivalF1,
+
+      scheduled_departure_f2: scheduledDepartureF2,
+      scheduled_arrival_f2: scheduledArrivalF2,
 
       monitoring_state: "safe",
       status: "active"
