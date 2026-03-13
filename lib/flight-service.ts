@@ -64,7 +64,8 @@ export async function resolveFlightInstance(
     scheduledDeparture: flight.dep_time ?? null,
     scheduledArrival: flight.arr_time ?? null
   };
-
+  }
+  
 export type FlightStatus = {
   flightNumber: string;
 
