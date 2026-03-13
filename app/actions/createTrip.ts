@@ -10,13 +10,22 @@ export async function createTripAndRedirect(args: {
   originAirport: string;
   connectionAirport: string;
   destinationAirport: string;
+
+  scheduledDepartureF1: string | null;
+  scheduledArrivalF1: string | null;
+  scheduledDepartureF2: string | null;
+  scheduledArrivalF2: string | null;
 }) {
   const {
     flight1Number,
     flight2Number,
     originAirport,
     connectionAirport,
-    destinationAirport
+    destinationAirport,
+    scheduledDepartureF1,
+    scheduledArrivalF1,
+    scheduledDepartureF2,
+    scheduledArrivalF2,
   } = args;
 
   const airline1 = flight1Number.slice(0, 2);
