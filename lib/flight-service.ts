@@ -36,36 +36,29 @@ export type ResolvedFlightInstance = {
 };
 
 export async function resolveFlightInstance(
-  airlineCode: string,
+  originAirport: string,
   flightNumber: string
 ): Promise<ResolvedFlightInstance | null> {
-  const response = await safeFetch<
-    Array<{
-      flight_iata?: string;
-      dep_iata?: string;
-      arr_iata?: string;
-      dep_time?: string;
-      arr_time?: string;
-    }>
-  >("/schedules", {
-    flight_iata: `${airlineCode}${flightNumber}`
-  });
 
-  if (!response || response.length === 0) {
-    return null;
-  }
+  const departures = await getAirportDepartures(originAirport);
 
-  const flight = response[0];
+  if (!departures) return null;
+
+  const match = departures.find(
+    f => f.flightNumber?.toUpperCase() === flightNumber.toUpperCase()
+  );
+
+  if (!match) return null;
 
   return {
-    flightId: flight.flight_iata ?? `${airlineCode}${flightNumber}`,
-    origin: flight.dep_iata ?? "",
-    destination: flight.arr_iata ?? "",
-    scheduledDeparture: flight.dep_time ?? null,
-    scheduledArrival: flight.arr_time ?? null
+    flightId: flightNumber,
+    origin: originAirport,
+    destination: match.destination ?? "",
+    scheduledDeparture: match.departureTime ?? null,
+    scheduledArrival: match.arrivalTime ?? null
   };
-  }
-  
+}
+
 export type FlightStatus = {
   flightNumber: string;
 
