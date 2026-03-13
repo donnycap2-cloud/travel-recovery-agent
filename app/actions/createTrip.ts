@@ -45,6 +45,13 @@ export async function createTripAndRedirect(args: {
     scheduledArrivalF2
   });
 
+  console.log("Normalized timestamps:", {
+    f1_depart: normalizeTimestamp(scheduledDepartureF1),
+    f1_arrive: normalizeTimestamp(scheduledArrivalF1),
+    f2_depart: normalizeTimestamp(scheduledDepartureF2),
+    f2_arrive: normalizeTimestamp(scheduledArrivalF2),
+  });
+  
   const { data, error } = await supabase
     .from("trips")
     .insert({
