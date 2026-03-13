@@ -17,12 +17,15 @@ function toEpochSeconds(value: string | null | undefined): number | null {
 }
 
 export async function runMonitoringCycle(): Promise<MonitoringSummary> {
+  const windowStart = new Date().toISOString();
   const windowEnd = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
-
+  
   const { data: trips, error } = await supabase
-  .from("trips")
-  .select("*")
-  .eq("status", "active");
+    .from("trips")
+    .select("*")
+    .eq("status", "active")
+    .gte("scheduled_departure_f1", windowStart)
+    .lte("scheduled_departure_f1", windowEnd);
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
