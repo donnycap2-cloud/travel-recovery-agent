@@ -79,6 +79,7 @@ export function AddTripClient() {
               createTripAndRedirect({
                 flight1Number: flight1.flightNumber,
                 flight2Number: flight2.flightNumber,
+                originAirport: flight1.origin,
                 connectionAirport,
                 destinationAirport
               })
