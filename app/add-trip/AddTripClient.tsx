@@ -75,25 +75,25 @@ export function AddTripClient() {
           </Card>
 
           <form action={createTripAndRedirect}>
-  <input type="hidden" name="flight1Number" value={flight1.flightNumber} />
-  <input type="hidden" name="flight2Number" value={flight2.flightNumber} />
-  <input type="hidden" name="originAirport" value={flight1.origin} />
-  <input type="hidden" name="connectionAirport" value={connectionAirport} />
-  <input type="hidden" name="destinationAirport" value={destinationAirport} />
+            <input type="hidden" name="flight1Number" value={flight1.flightNumber} />
+            <input type="hidden" name="flight2Number" value={flight2.flightNumber} />
+            <input type="hidden" name="originAirport" value={flight1.origin} />
+            <input type="hidden" name="connectionAirport" value={connectionAirport} />
+            <input type="hidden" name="destinationAirport" value={destinationAirport} />
 
-  <input type="hidden" name="scheduledDepartureF1" value={flight1.departureTime ?? ""} />
-  <input type="hidden" name="scheduledArrivalF1" value={flight1.arrivalTime ?? ""} />
+            <input type="hidden" name="scheduledDepartureF1" value={flight1.departureTime ?? ""} />
+            <input type="hidden" name="scheduledArrivalF1" value={flight1.arrivalTime ?? ""} />
 
-  <input type="hidden" name="scheduledDepartureF2" value={flight2.departureTime ?? ""} />
-  <input type="hidden" name="scheduledArrivalF2" value={flight2.arrivalTime ?? ""} />
+            <input type="hidden" name="scheduledDepartureF2" value={flight2.departureTime ?? ""} />
+            <input type="hidden" name="scheduledArrivalF2" value={flight2.arrivalTime ?? ""} />
 
-  <button
-    type="submit"
-    className="inline-flex w-full items-center justify-center rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-zinc-50 ring-1 ring-white/10 hover:bg-white/15 active:bg-white/20"
-  >
-    Confirm
-  </button>
-</form>
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-zinc-50 ring-1 ring-white/10 hover:bg-white/15 active:bg-white/20"
+           >
+              Confirm
+            </button>
+          </form>
         </section>
       </main>
     );
