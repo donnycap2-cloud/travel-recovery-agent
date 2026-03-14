@@ -77,6 +77,9 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     const previousState = (trip.monitoring_state as string | null) ?? "safe";
     const newState = risk.state;
 
+    if (previousState === newState && trip.connection_time_remaining === risk.connectionTimeRemaining) {
+      continue;
+    }
 
     stateChanges += previousState === newState ? 0 : 1;
 
@@ -89,16 +92,13 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     } satisfies Partial<RiskEventRow>);
 
     // 8. Update trip monitoring_state + connection_time_remaining
-    const { data: updateData, error: updateError } = await supabase
-    .from("trips")
-    .update({
-      monitoring_state: newState,
-      connection_time_remaining: risk.connectionTimeRemaining
-    })
-    .eq("id", trip.id)
-    .select();
-  
-  console.log("TRIP UPDATE RESULT:", updateData, updateError);
+    await supabase
+      .from("trips")
+      .update({
+        monitoring_state: newState,
+        connection_time_remaining: risk.connectionTimeRemaining
+      })
+      .eq("id", trip.id);
 
     // 9–10. Landing plan actions
     if (previousState !== "likely_missed" && newState === "likely_missed") {
