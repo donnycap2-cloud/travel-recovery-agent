@@ -1,21 +1,33 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { runMonitoringCycle } from "@/lib/monitoring-worker";
 
-export async function GET(request: NextRequest) {
-  const delayMs = Number(request.nextUrl.searchParams.get("ms")) || 1000;
-  const clamped = Math.min(Math.max(0, delayMs), 30000); // 0–30s
-  await new Promise((r) => setTimeout(r, clamped));
-  return Response.json({ delayed: clamped });
-}
+export async function POST(req: NextRequest) {
 
-export async function POST(request: NextRequest) {
-  let delayMs = 1000;
-  try {
-    const body = await request.json();
-    if (typeof body?.ms === "number") delayMs = body.ms;
-  } catch {
-    // ignore
+  const { tripId, delayMinutes } = await req.json();
+
+  const { data: trip } = await supabase
+    .from("trips")
+    .select("*")
+    .eq("id", tripId)
+    .single();
+
+  if (!trip) {
+    return NextResponse.json({ ok: false });
   }
-  const clamped = Math.min(Math.max(0, delayMs), 30000);
-  await new Promise((r) => setTimeout(r, clamped));
-  return Response.json({ delayed: clamped });
+
+  const arrival = new Date(trip.scheduled_arrival_f1);
+
+  arrival.setMinutes(arrival.getMinutes() + delayMinutes);
+
+  await supabase
+    .from("trips")
+    .update({
+      estimated_arrival_f1: arrival.toISOString()
+    })
+    .eq("id", tripId);
+
+  await runMonitoringCycle();
+
+  return NextResponse.json({ ok: true });
 }
