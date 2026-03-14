@@ -22,7 +22,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false });
   }
 
-  const arrival = new Date(trip.scheduled_arrival_f1);
+  const baseArrival =
+  trip.estimated_arrival_f1 ??
+  trip.scheduled_arrival_f1;
+
+if (!baseArrival) {
+  console.log("No arrival time available");
+  return NextResponse.json({ ok: false });
+}
+
+const arrival = new Date(baseArrival);
 
   arrival.setMinutes(arrival.getMinutes() + delayMinutes);
 
