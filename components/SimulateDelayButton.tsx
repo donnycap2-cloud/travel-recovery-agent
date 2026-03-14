@@ -4,6 +4,9 @@ export default function SimulateDelayButton({ tripId }: { tripId: string }) {
   async function simulateDelay() {
     await fetch("/api/simulate-delay", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
         tripId,
         delayMinutes: 25
