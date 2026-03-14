@@ -1,23 +1,66 @@
 import { MobileHeader } from "@/components/MobileHeader";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+
+function getRiskDisplay(state: string | null) {
+  switch (state) {
+    case "safe":
+      return { label: "Safe connection", color: "text-green-400" };
+    case "tight":
+      return { label: "Tight connection", color: "text-yellow-400" };
+    case "likely_missed":
+      return { label: "Likely missed", color: "text-red-400" };
+    case "impossible":
+      return { label: "Impossible connection", color: "text-red-600" };
+    default:
+      return { label: "Unknown", color: "text-zinc-400" };
+  }
+}
 
 export default async function TripMonitorPage({
   params
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
+
+  const { data: trip } = await supabase
+    .from("trips")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (!trip) {
+    return <div>Trip not found</div>;
+  }
+
+  const risk = getRiskDisplay(trip.monitoring_state);
 
   return (
     <main>
       <MobileHeader title="Monitoring" backHref="/" />
 
       <section className="space-y-3">
+
         <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
           <p className="text-xs uppercase tracking-wide text-zinc-400">
             Trip ID
           </p>
           <p className="mt-1 font-mono text-sm text-zinc-100">{id}</p>
+        </div>
+
+        <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+          <p className="text-xs uppercase tracking-wide text-zinc-400">
+            Connection Status
+          </p>
+
+          <p className={`mt-1 text-lg font-semibold ${risk.color}`}>
+            {risk.label}
+          </p>
+
+          <p className="text-sm text-zinc-400 mt-1">
+            {trip.connection_time_remaining ?? "—"} minutes remaining
+          </p>
         </div>
 
         <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
@@ -32,8 +75,8 @@ export default async function TripMonitorPage({
         >
           View landing plan
         </Link>
+
       </section>
     </main>
   );
 }
-
