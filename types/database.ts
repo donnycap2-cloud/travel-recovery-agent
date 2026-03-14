@@ -5,8 +5,8 @@ export interface TripRow {
   id: string;
   created_at: string;
 
-  flight_number_f1: string;
-  flight_number_f2: string;
+  flight_1_number: string;
+  flight_2_number: string;
 
   flight_id_f1: string | null;
   flight_id_f2: string | null;
