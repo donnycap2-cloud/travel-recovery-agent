@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { redirect } from "next/navigation";
+import { runMonitoringCycle } from "@/lib/monitoring-worker";
 
 export async function createTripAndRedirect(formData: FormData) {
 
@@ -39,6 +40,8 @@ export async function createTripAndRedirect(formData: FormData) {
     })
     .select("id")
     .single();
+
+    await runMonitoringCycle();
 
   if (error || !data?.id) {
     throw new Error(error?.message || "Failed to create trip.");
