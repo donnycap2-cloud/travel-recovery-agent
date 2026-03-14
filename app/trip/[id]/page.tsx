@@ -30,6 +30,12 @@ export default async function TripMonitorPage({
     .eq("id", id)
     .single();
 
+    const { data: events } = await supabase
+    .from("risk_events")
+    .select("*")
+    .eq("trip_id", id)
+    .order("created_at", { ascending: false });
+
   if (!trip) {
     return <div>Trip not found</div>;
   }
@@ -68,6 +74,42 @@ export default async function TripMonitorPage({
             Status widgets go here (gate, ETA, alerts, etc).
           </p>
         </div>
+
+        <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+
+<p className="text-xs uppercase tracking-wide text-zinc-400">
+  Monitoring Timeline
+</p>
+
+<div className="mt-2 space-y-2">
+
+  {events && events.length > 0 ? (
+    events.map((event) => (
+      <div
+        key={event.id}
+        className="flex items-center justify-between text-sm"
+      >
+        <span className="text-zinc-400">
+          {new Date(event.created_at).toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit"
+          })}
+        </span>
+
+        <span className="text-zinc-200">
+          {event.new_state}
+        </span>
+      </div>
+    ))
+  ) : (
+    <p className="text-sm text-zinc-400">
+      No monitoring events yet.
+    </p>
+  )}
+
+</div>
+
+</div>
 
         <Link
           href={`/plan/${encodeURIComponent(id)}`}
