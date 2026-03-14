@@ -77,13 +77,6 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     const previousState = (trip.monitoring_state as string | null) ?? "safe";
     const newState = risk.state;
 
-    if (
-      previousState === newState &&
-      trip.connection_time_remaining !== null &&
-      trip.connection_time_remaining === risk.connectionTimeRemaining
-    ) {
-      continue;
-    }
 
     stateChanges += previousState === newState ? 0 : 1;
 
