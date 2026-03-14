@@ -23,9 +23,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   const { data: trips, error } = await supabase
     .from("trips")
     .select("*")
-    .eq("status", "active")
-    .gte("scheduled_departure_f1", windowStart)
-    .lte("scheduled_departure_f1", windowEnd);
+    .eq("status", "active");
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
@@ -36,14 +34,14 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   for (const raw of trips as TripRow[]) {
     const trip = raw;
 
-    if (!trip.flight_number_f1 || !trip.flight_number_f2 || !trip.scheduled_departure_f2) {
+    if (!trip.flight_1_number || !trip.flight_2_number || !trip.scheduled_departure_f2) {
       continue;
     }
 
     // 2. Fetch status for both legs
     const [statusF1, statusF2] = await Promise.all([
-      getFlightStatus(trip.flight_number_f1),
-      getFlightStatus(trip.flight_number_f2)
+      getFlightStatus(trip.flight_1_number),
+      getFlightStatus(trip.flight_2_number)
     ]);
 
     // 3. Determine estimated arrival for flight 1
