@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import SimulateDelayButton from "@/components/SimulateDelayButton";
 import { MobileHeader } from "@/components/MobileHeader";
 import Link from "next/link";
