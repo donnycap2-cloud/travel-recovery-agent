@@ -74,30 +74,26 @@ export function AddTripClient() {
             </span>
           </Card>
 
-          <form
-            action={async () =>
-              createTripAndRedirect({
-                flight1Number: flight1.flightNumber,
-                flight2Number: flight2.flightNumber,
-                originAirport: flight1.origin,
-                connectionAirport,
-                destinationAirport,
-              
-                scheduledDepartureF1: flight1.departureTime,
-                scheduledArrivalF1: flight1.arrivalTime,
-              
-                scheduledDepartureF2: flight2.departureTime,
-                scheduledArrivalF2: flight2.arrivalTime
-              })
-            }
-          >
-            <button
-              type="submit"
-              className="inline-flex w-full items-center justify-center rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-zinc-50 ring-1 ring-white/10 hover:bg-white/15 active:bg-white/20"
-            >
-              Confirm
-            </button>
-          </form>
+          <form action={createTripAndRedirect}>
+  <input type="hidden" name="flight1Number" value={flight1.flightNumber} />
+  <input type="hidden" name="flight2Number" value={flight2.flightNumber} />
+  <input type="hidden" name="originAirport" value={flight1.origin} />
+  <input type="hidden" name="connectionAirport" value={connectionAirport} />
+  <input type="hidden" name="destinationAirport" value={destinationAirport} />
+
+  <input type="hidden" name="scheduledDepartureF1" value={flight1.departureTime ?? ""} />
+  <input type="hidden" name="scheduledArrivalF1" value={flight1.arrivalTime ?? ""} />
+
+  <input type="hidden" name="scheduledDepartureF2" value={flight2.departureTime ?? ""} />
+  <input type="hidden" name="scheduledArrivalF2" value={flight2.arrivalTime ?? ""} />
+
+  <button
+    type="submit"
+    className="inline-flex w-full items-center justify-center rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-zinc-50 ring-1 ring-white/10 hover:bg-white/15 active:bg-white/20"
+  >
+    Confirm
+  </button>
+</form>
         </section>
       </main>
     );
