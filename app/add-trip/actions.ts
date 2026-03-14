@@ -128,15 +128,15 @@ export async function fetchFlightData(
         flightNumber: flight1,
         origin,
         destination: connection,
-        departureTime: formatTime(new Date(arrive.getTime() - 2 * 60 * 60 * 1000)),
-        arrivalTime: formatTime(arrive)
+        departureTime: new Date(arrive.getTime() - 2 * 60 * 60 * 1000).toISOString(),
+        arrivalTime: arrive.toISOString()
       },
       flight2: {
         flightNumber: flight2,
         origin: connection,
         destination,
-        departureTime: formatTime(depart),
-        arrivalTime: formatTime(new Date(depart.getTime() + 2 * 60 * 60 * 1000))
+        departureTime: depart.toISOString(),
+        arrivalTime: new Date(depart.getTime() + 2 * 60 * 60 * 1000).toISOString()
       },
       connectionMinutes
     }
