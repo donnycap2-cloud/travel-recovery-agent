@@ -44,6 +44,21 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       getFlightStatus(trip.flight_2_number)
     ]);
 
+    await supabase
+  .from("trips")
+  .update({
+    estimated_arrival_f1:
+      statusF1?.estimatedArrival ??
+      statusF1?.actualArrival ??
+      trip.estimated_arrival_f1,
+
+    estimated_departure_f2:
+      statusF2?.estimatedDeparture ??
+      statusF2?.actualDeparture ??
+      trip.estimated_departure_f2
+  })
+  .eq("id", trip.id);
+  
     // 3. Determine estimated arrival for flight 1
     // Prefer: arr_actual -> arr_estimated -> arr_time.
     // Our flight-status helper exposes only estimated; fall back to scheduled from trip.
