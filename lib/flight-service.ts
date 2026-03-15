@@ -41,6 +41,7 @@ export async function resolveFlightInstance(
   date?: string
 ): Promise<ResolvedFlightInstance | null> {
 
+  // --- Attempt 1: direct flight lookup
   const response = await safeFetch<
     Array<{
       flight_iata?: string
@@ -49,27 +50,51 @@ export async function resolveFlightInstance(
       dep_time?: string
       arr_time?: string
     }>
-    >("/schedules", {
-      flight_iata: flightNumber,
-      ...(date ? { date } : {})
-    })
+  >("/schedules", {
+    flight_iata: flightNumber,
+    ...(date ? { date } : {})
+  });
 
-  if (!response || response.length === 0) {
-    console.log("AirLabs flight lookup returned nothing:", flightNumber)
-    return null
+  if (response && response.length > 0) {
+    const flight = response[0];
+
+    return {
+      flightId: flight.flight_iata ?? flightNumber,
+      origin: flight.dep_iata ?? originAirport,
+      destination: flight.arr_iata ?? "",
+      scheduledDeparture: flight.dep_time ?? null,
+      scheduledArrival: flight.arr_time ?? null
+    };
   }
-  
-  console.log("AirLabs flight lookup result:", response[0])
 
-  const flight = response[0]
+  console.log("Direct lookup failed, trying airport departures");
+
+  // --- Attempt 2: search airport departures
+  if (!originAirport) {
+    return null;
+  }
+
+  const departures = await getAirportDepartures(originAirport);
+
+  if (!departures) {
+    return null;
+  }
+
+  const match = departures.find(
+    f => f.flightNumber?.toUpperCase() === flightNumber.toUpperCase()
+  );
+
+  if (!match) {
+    return null;
+  }
 
   return {
-    flightId: flight.flight_iata ?? flightNumber,
-    origin: flight.dep_iata ?? originAirport,
-    destination: flight.arr_iata ?? "",
-    scheduledDeparture: flight.dep_time ?? null,
-    scheduledArrival: flight.arr_time ?? null
-  }
+    flightId: flightNumber,
+    origin: originAirport,
+    destination: match.destination ?? "",
+    scheduledDeparture: match.departureTime ?? null,
+    scheduledArrival: match.arrivalTime ?? null
+  };
 }
 
 export type FlightStatus = {
