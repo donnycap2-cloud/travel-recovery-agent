@@ -48,18 +48,18 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     // Prefer: arr_actual -> arr_estimated -> arr_time.
     // Our flight-status helper exposes only estimated; fall back to scheduled from trip.
     const arrivalF1Seconds =
-      toEpochSeconds(statusF1?.actualArrival ?? null) ??
-      toEpochSeconds(statusF1?.estimatedArrival ?? null) ??
       toEpochSeconds(trip.estimated_arrival_f1) ??
-      toEpochSeconds(trip.scheduled_arrival_f1);
+      toEpochSeconds(trip.scheduled_arrival_f1) ??
+      toEpochSeconds(statusF1?.actualArrival ?? null) ??
+      toEpochSeconds(statusF1?.estimatedArrival ?? null);
 
     // Determine departure time of flight 2
     // Prefer: actual -> estimated -> scheduled
     const departureF2Seconds =
-      toEpochSeconds(statusF2?.actualDeparture ?? null) ??
-      toEpochSeconds(statusF2?.estimatedDeparture ?? null) ??
       toEpochSeconds(trip.estimated_departure_f2) ??
-      toEpochSeconds(trip.scheduled_departure_f2);
+      toEpochSeconds(trip.scheduled_departure_f2) ??
+      toEpochSeconds(statusF2?.actualDeparture ?? null) ??
+      toEpochSeconds(statusF2?.estimatedDeparture ?? null);
 
     if (arrivalF1Seconds == null || departureF2Seconds == null) {
       continue;
