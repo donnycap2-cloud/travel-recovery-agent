@@ -36,8 +36,8 @@ function normalizeFlightNumber(input: string) {
 }
 
 function isValidFlightNumber(flight: string) {
-  // Simple, permissive pattern: 2-3 letter airline code + 1-4 digits
-  return /^[A-Z]{2,3}\d{1,4}$/.test(flight);
+  // Simple, permissive pattern: 2-3 letter/numver airline code + 1-4 digits
+  return /^[A-Z0-9]{2,3}\d{1,4}$/.test(flight);
 }
 
 function hashToIndex(str: string, modulo: number) {
