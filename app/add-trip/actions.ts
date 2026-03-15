@@ -102,9 +102,16 @@ export async function fetchFlightData(
     };
   }
 
-  // Stubbed backend response (replace later with real API integration)
-  const flight1Resolved = await resolveFlightInstance("", flight1);
-  const flight2Resolved = await resolveFlightInstance("", flight2);
+  const flight1Resolved = await resolveFlightInstance(
+    "", // unknown for first leg
+    flight1,
+    date
+  );
+  const flight2Resolved = await resolveFlightInstance(
+    flight1Resolved?.destination ?? "",
+    flight2,
+    date
+  );
   
   if (!flight1Resolved || !flight2Resolved) {
     return {
