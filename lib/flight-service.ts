@@ -48,7 +48,7 @@ export async function resolveFlightInstance(
       dep_time?: string
       arr_time?: string
     }>
-  >("/flights", {
+  >("/schedules", {
     flight_iata: flightNumber
   })
 
