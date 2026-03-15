@@ -37,7 +37,8 @@ export type ResolvedFlightInstance = {
 
 export async function resolveFlightInstance(
   originAirport: string,
-  flightNumber: string
+  flightNumber: string,
+  date?: string
 ): Promise<ResolvedFlightInstance | null> {
 
   const response = await safeFetch<
@@ -48,9 +49,10 @@ export async function resolveFlightInstance(
       dep_time?: string
       arr_time?: string
     }>
-  >("/schedules", {
-    flight_iata: flightNumber
-  })
+    >("/schedules", {
+      flight_iata: flightNumber,
+      ...(date ? { date } : {})
+    })
 
   if (!response || response.length === 0) {
     console.log("AirLabs flight lookup returned nothing:", flightNumber)
