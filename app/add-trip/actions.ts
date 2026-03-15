@@ -1,5 +1,7 @@
 "use server";
 
+import { resolveFlightInstance } from "@/lib/flight-service";
+
 type FlightLeg = {
   flightNumber: string
   origin: string
@@ -101,20 +103,24 @@ export async function fetchFlightData(
   }
 
   // Stubbed backend response (replace later with real API integration)
-  const origin = pickAirport(flight1, 1);
-  const connection = pickAirport(flight1, 2);
-  const destination = pickAirport(flight2, 3);
+  const flight1Resolved = await resolveFlightInstance("", flight1);
+  const flight2Resolved = await resolveFlightInstance("", flight2);
+  
+  if (!flight1Resolved || !flight2Resolved) {
+    return {
+      status: "error",
+      message: "Could not resolve flight schedule.",
+      values: { flight1: rawFlight1, flight2: rawFlight2, date: rawDate }
+    };
+  }
 
-  // Build deterministic times for the selected date.
-  // Flight 1 arrives mid-day; Flight 2 departs shortly after.
-  const arrive = new Date(baseDate!);
-  arrive.setHours(12 + hashToIndex(flight1, 4), 10, 0, 0);
+  const arrival = new Date(flight1Resolved.scheduledArrival!);
+const depart = new Date(flight2Resolved.scheduledDeparture!);
 
-  const depart = new Date(baseDate!);
-  depart.setHours(arrive.getHours(), arrive.getMinutes(), 0, 0);
-  depart.setMinutes(depart.getMinutes() + 75 + hashToIndex(flight2, 46)); // 75-120 min after arrival
+const connectionMinutes = Math.round(
+  (depart.getTime() - arrival.getTime()) / 60000
+);
 
-  const connectionMinutes = Math.max(0, Math.round((depart.getTime() - arrive.getTime()) / 60000));
 
   return {
     status: "success",
@@ -125,22 +131,21 @@ export async function fetchFlightData(
     },
     data: {
       flight1: {
-        flightNumber: flight1,
-        origin,
-        destination: connection,
-        departureTime: new Date(arrive.getTime() - 2 * 60 * 60 * 1000).toISOString(),
-        arrivalTime: arrive.toISOString()
+        flightNumber: flight1Resolved.flightId,
+        origin: flight1Resolved.origin,
+        destination: flight1Resolved.destination,
+        departureTime: flight1Resolved.scheduledDeparture!,
+        arrivalTime: flight1Resolved.scheduledArrival!
       },
       flight2: {
-        flightNumber: flight2,
-        origin: connection,
-        destination,
-        departureTime: depart.toISOString(),
-        arrivalTime: new Date(depart.getTime() + 2 * 60 * 60 * 1000).toISOString()
+        flightNumber: flight2Resolved.flightId,
+        origin: flight2Resolved.origin,
+        destination: flight2Resolved.destination,
+        departureTime: flight2Resolved.scheduledDeparture!,
+        arrivalTime: flight2Resolved.scheduledArrival!
       },
       connectionMinutes
     }
-  };
 }
 
-
+}
