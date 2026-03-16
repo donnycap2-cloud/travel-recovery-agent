@@ -91,7 +91,7 @@ export default async function PlanPage({
               </p>
 
               <p className="text-sm text-zinc-400">
-                {option.origin} → {option.destination}
+                {option.origin || trip.connection_airport} → {option.destination || trip.destination_airport}
               </p>
 
               <p className="text-sm text-zinc-400">
