@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { MobileHeader } from "@/components/MobileHeader";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import ConnectionCountdown from "@/components/ConnectionCountdown"
 
 function getRiskDisplay(state: string | null) {
   switch (state) {
@@ -62,13 +63,55 @@ export default async function TripMonitorPage({
             Connection Status
           </p>
 
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+
+            <p className="text-xs uppercase tracking-wide text-zinc-400">
+              Flight Status
+            </p>
+
+            <div className="mt-2 space-y-1 text-sm text-zinc-200">
+
+              <p>
+                Flight 1 arrival:
+                <span className="font-medium text-zinc-100 ml-1">
+                  {trip.estimated_arrival_f1
+                    ? new Date(trip.estimated_arrival_f1).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit"
+                      })
+                    : "—"}
+                </span>
+              </p>
+
+              <p>
+                Flight 2 departure:
+                <span className="font-medium text-zinc-100 ml-1">
+                  {trip.scheduled_departure_f2
+                    ? new Date(trip.scheduled_departure_f2).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit"
+                      })
+                    : "—"}
+                </span>
+              </p>
+
+            </div>
+
+          </div>
+
           <p className={`mt-1 text-lg font-semibold ${risk.color}`}>
             {risk.label}
           </p>
 
-          <p className="text-sm text-zinc-400 mt-1">
-            {trip.connection_time_remaining ?? "—"} minutes remaining
-          </p>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-zinc-400">
+              Connection countdown
+            </p>
+
+            <ConnectionCountdown
+              departure={trip.scheduled_departure_f2}
+            />
+          </div>
         </div>
 
         <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
