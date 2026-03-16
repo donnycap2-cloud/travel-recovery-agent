@@ -3,12 +3,11 @@ import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-export default async function LandingPlanPage({
+export default async function PlanPage({
   params
 }: {
   params: { id: string };
 }) {
-
   const { id } = params;
 
   const { data: plan } = await supabase
@@ -19,45 +18,42 @@ export default async function LandingPlanPage({
     .limit(1)
     .single();
 
-  if (!plan) {
-    return (
-      <main>
-        <MobileHeader title="Landing plan" backHref={`/trip/${id}`} />
-
-        <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
-          <p className="text-sm text-zinc-300">
-            No recovery plan generated yet.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main>
-      <MobileHeader title="Landing plan" backHref={`/trip/${id}`} />
+      <MobileHeader title="Recovery Plan" backHref={`/trip/${id}`} />
 
       <section className="space-y-3">
 
-        <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
-          <p className="text-xs uppercase tracking-wide text-zinc-400">
-            Plan created
-          </p>
+        {!plan || !plan.options || plan.options.length === 0 ? (
+          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+            <p className="text-sm text-zinc-400">
+              No recovery plan generated yet.
+            </p>
+          </div>
+        ) : (
+          plan.options.map((option: any, index: number) => (
+            <div
+              key={index}
+              className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"
+            >
+              <p className="text-xs uppercase tracking-wide text-zinc-400">
+                Option {index + 1}
+              </p>
 
-          <p className="text-sm text-zinc-100 mt-1">
-            {new Date(plan.created_at).toLocaleString()}
-          </p>
-        </div>
+              <p className="mt-1 text-lg font-semibold text-zinc-50">
+                {option.flightNumber}
+              </p>
 
-        <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
-          <p className="text-xs uppercase tracking-wide text-zinc-400">
-            Reason
-          </p>
+              <p className="mt-1 text-sm text-zinc-200">
+                Departs {option.departure}
+              </p>
 
-          <p className="text-sm text-zinc-100 mt-1">
-            {plan.reason}
-          </p>
-        </div>
+              <p className="text-sm text-zinc-200">
+                Arrives {option.arrival}
+              </p>
+            </div>
+          ))
+        )}
 
       </section>
     </main>
