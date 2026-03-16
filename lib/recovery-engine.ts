@@ -47,8 +47,11 @@ const MAJOR_HUBS = [
   export async function generateRecoveryPlan(
     connectionAirport: string,
     destinationAirport: string,
-    arrivalTime: string | null
+    arrivalTime: string | null,
+    originalFlight: string
   ): Promise<RecoveryOption[]> {
+
+    const originalAirline = originalFlight?.slice(0, 2);
   
     const apiKey = process.env.AIRLABS_API_KEY
     if (!apiKey) return []
@@ -138,7 +141,20 @@ const MAJOR_HUBS = [
       }
     }
   
+    flights.sort((a, b) => {
+
+        const aSameAirline = a.flightNumber.startsWith(originalAirline);
+        const bSameAirline = b.flightNumber.startsWith(originalAirline);
+      
+        if (aSameAirline && !bSameAirline) return -1;
+        if (!aSameAirline && bSameAirline) return 1;
+      
+        return new Date(a.arrival).getTime() - new Date(b.arrival).getTime();
+      
+      });
+
     return flights
+    
       .sort(
         (a, b) =>
           new Date(a.arrival).getTime() -
