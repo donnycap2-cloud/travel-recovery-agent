@@ -10,6 +10,21 @@ function formatTime(time: string) {
   });
 }
 
+function getDelayImpact(trip: any) {
+  if (!trip?.estimated_arrival_f1 || !trip?.scheduled_departure_f2) {
+    return null;
+  }
+
+  const arrival = new Date(trip.estimated_arrival_f1).getTime();
+  const departure = new Date(trip.scheduled_departure_f2).getTime();
+
+  const diffMinutes = Math.round((arrival - departure) / 60000);
+
+  if (diffMinutes <= 0) return null;
+
+  return `You will miss your connection by ${diffMinutes} minutes.`;
+}
+
 export default async function PlanPage({
   params
 }: {
@@ -25,11 +40,27 @@ export default async function PlanPage({
     .limit(1)
     .single();
 
+  const { data: trip } = await supabase
+    .from("trips")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  const delayImpact = getDelayImpact(trip);
+
   return (
     <main>
       <MobileHeader title="Recovery Plan" backHref={`/trip/${id}`} />
 
       <section className="space-y-3">
+
+        {delayImpact && (
+    <div className="rounded-2xl bg-red-500/10 p-4 ring-1 ring-red-500/20">
+      <p className="text-sm text-red-300">
+        {delayImpact}
+      </p>
+    </div>
+  )}
 
         {!plan || !plan.options || plan.options.length === 0 ? (
           <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
@@ -49,6 +80,10 @@ export default async function PlanPage({
 
               <p className="mt-1 text-lg font-semibold text-zinc-50">
                 {option.flightNumber}
+              </p>
+
+              <p className="text-sm text-zinc-400">
+                {option.origin} → {option.destination}
               </p>
 
               <p className="mt-1 text-sm text-zinc-200">
