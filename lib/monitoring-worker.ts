@@ -119,7 +119,10 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     // 9–10. Landing plan actions
     if (previousState !== "likely_missed" && newState === "likely_missed") {
 
-      const options = generateRecoveryPlan(trip.destination_airport);
+      const options = await generateRecoveryPlan(
+        trip.connection_airport,
+        trip.destination_airport
+      );
 
       await supabase.from("landing_plans").insert({
         trip_id: trip.id,
@@ -130,17 +133,20 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
     } else if (previousState !== "impossible" && newState === "impossible") {
 
-      const options = generateRecoveryPlan(trip.destination_airport);
-
+      const options = await generateRecoveryPlan(
+        trip.connection_airport,
+        trip.destination_airport
+      );
+    
       const { data: existingPlans } = await supabase
         .from("landing_plans")
         .select("id")
         .eq("trip_id", trip.id)
         .order("created_at", { ascending: false })
         .limit(1);
-
+    
       if (existingPlans && existingPlans.length > 0) {
-
+    
         await supabase
           .from("landing_plans")
           .update({
@@ -148,16 +154,16 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
             options
           })
           .eq("id", existingPlans[0]!.id);
-
+    
       } else {
-
+    
         await supabase.from("landing_plans").insert({
           trip_id: trip.id,
           created_at: new Date().toISOString(),
           reason: "connection impossible",
           options
         });
-
+    
       }
     }
   }
