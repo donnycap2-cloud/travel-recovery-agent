@@ -1,25 +1,25 @@
-export type RecoveryOption = {
-    flightNumber: string
-    departure: string
-    arrival: string
+const AIRLABS_BASE_URL = "https://airlabs.co/api/v9";
+
+export async function generateRecoveryPlan(
+  connectionAirport: string,
+  destinationAirport: string
+) {
+
+  const apiKey = process.env.AIRLABS_API_KEY;
+
+  const url = `${AIRLABS_BASE_URL}/schedules?dep_iata=${connectionAirport}&arr_iata=${destinationAirport}&api_key=${apiKey}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (!data?.response) {
+    return [];
   }
-  
-  export function generateRecoveryPlan(destination: string): RecoveryOption[] {
-  
-    // Stubbed recovery options
-    // Later this will call flight search APIs
-  
-    return [
-      {
-        flightNumber: "UA1823",
-        departure: "6:30 PM",
-        arrival: "9:10 PM"
-      },
-      {
-        flightNumber: "AA901",
-        departure: "7:15 PM",
-        arrival: "9:45 PM"
-      }
-    ]
-  }
-  
+
+  return data.response.slice(0, 3).map((flight: any) => ({
+    flightNumber: flight.flight_iata,
+    departure: flight.dep_time,
+    arrival: flight.arr_time
+  }));
+}
+
