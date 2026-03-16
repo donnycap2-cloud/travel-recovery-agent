@@ -74,9 +74,17 @@ export default async function PlanPage({
               key={index}
               className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"
             >
-              <p className="text-xs uppercase tracking-wide text-zinc-400">
-                Option {index + 1}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wide text-zinc-400">
+                  Option {index + 1}
+                </p>
+
+                {index === 0 && (
+                  <span className="text-xs font-semibold text-green-400">
+                    Best option
+                  </span>
+                )}
+              </div>
 
               <p className="mt-1 text-lg font-semibold text-zinc-50">
                 {option.airline} {option.flightNumber}
@@ -89,7 +97,6 @@ export default async function PlanPage({
               <p className="text-sm text-zinc-400">
                 {option.duration}
               </p>
-
 
               <p className="mt-1 text-sm text-zinc-200">
                 Departs {formatTime(option.departure)}
