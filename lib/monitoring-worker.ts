@@ -27,6 +27,8 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     .select("*")
     .eq("status", "active");
 
+    console.log("TRIPS RETURNED:", trips?.map(t => t.id));
+
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
   }
