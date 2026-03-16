@@ -79,12 +79,17 @@ export default async function PlanPage({
               </p>
 
               <p className="mt-1 text-lg font-semibold text-zinc-50">
-                {option.flightNumber}
+                {option.airline} {option.flightNumber}
               </p>
 
               <p className="text-sm text-zinc-400">
                 {option.origin} → {option.destination}
               </p>
+
+              <p className="text-sm text-zinc-400">
+                {option.duration}
+              </p>
+
 
               <p className="mt-1 text-sm text-zinc-200">
                 Departs {formatTime(option.departure)}
