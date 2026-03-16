@@ -153,12 +153,49 @@ const MAJOR_HUBS = [
       
       });
 
-    return flights
-    
+      const ranked = flights
       .sort(
         (a, b) =>
           new Date(a.arrival).getTime() -
           new Date(b.arrival).getTime()
       )
       .slice(0, 3)
+    
+    if (ranked.length > 0) {
+      return ranked
+    }
+
+    // fallback: show next available departure
+
+const schedules = await getSchedules(
+    connectionAirport,
+    destinationAirport,
+    apiKey
+  )
+  
+  if (!schedules || schedules.length === 0) {
+    return []
   }
+  
+  const next = schedules
+    .map((f: any) => ({
+      airline: f.airline_iata ?? "Airline",
+      flightNumber: f.flight_iata,
+      departure: f.dep_time,
+      arrival: f.arr_time,
+      origin: connectionAirport,
+      destination: destinationAirport,
+      duration: calculateDuration(f.dep_time, f.arr_time)
+    }))
+    .filter((f: any) => f.departure && f.arrival)
+    .sort(
+      (a: any, b: any) =>
+        new Date(a.departure).getTime() -
+        new Date(b.departure).getTime()
+    )[0]
+  
+  if (!next) {
+    return []
+  }
+  
+  return [next]}
