@@ -25,7 +25,9 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   const { data: trips, error } = await supabase
     .from("trips")
     .select("*")
-    .eq("status", "active");
+    .eq("status", "active")
+    .gte("scheduled_departure_f1", windowStart)
+    .lte("scheduled_departure_f1", windowEnd);
 
     console.log("TRIPS RETURNED:", trips?.map(t => t.id));
 
