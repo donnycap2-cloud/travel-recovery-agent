@@ -126,6 +126,8 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
         trip.flight_2_number
       );
 
+      console.log("RECOVERY OPTIONS:", options)
+
       await supabase.from("landing_plans").insert({
         trip_id: trip.id,
         created_at: new Date().toISOString(),
