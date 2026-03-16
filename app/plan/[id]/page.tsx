@@ -3,6 +3,13 @@ import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+function formatTime(time: string) {
+  return new Date(time).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
 export default async function PlanPage({
   params
 }: {
@@ -45,11 +52,11 @@ export default async function PlanPage({
               </p>
 
               <p className="mt-1 text-sm text-zinc-200">
-                Departs {option.departure}
+                Departs {formatTime(option.departure)}
               </p>
 
               <p className="text-sm text-zinc-200">
-                Arrives {option.arrival}
+                Arrives {formatTime(option.arrival)}
               </p>
             </div>
           ))
