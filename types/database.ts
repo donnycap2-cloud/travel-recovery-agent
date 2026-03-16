@@ -46,9 +46,12 @@ export interface LandingPlanRow {
   secondary_arrival: ISODateTime | null;
   reason: string | null;
   options: {
+    airline: string
     flightNumber: string
     departure: string
     arrival: string
+    origin: string
+    destination: string
     duration: string
   }[] | null
 }
