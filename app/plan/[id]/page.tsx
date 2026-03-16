@@ -20,6 +20,24 @@ function formatDuration(dep: string, arr: string) {
   return `${hours}h ${remainingMinutes}m`
 }
 
+function getRecoveryReason(option: any, index: number, trip: any) {
+  const originalAirline = trip?.flight_2_number?.slice(0, 2)
+
+  if (option.flightNumber?.startsWith(originalAirline)) {
+    return "Same airline as your missed connection"
+  }
+
+  if (index === 0) {
+    return "Fastest arrival to your destination"
+  }
+
+  if (index === 1) {
+    return "Second fastest arrival option"
+  }
+
+  return "Alternative recovery option"
+}
+
 function getDelayImpact(trip: any) {
   if (!trip?.estimated_arrival_f1 || !trip?.scheduled_departure_f2) {
     return null;
@@ -106,6 +124,10 @@ export default async function PlanPage({
 
               <p className="text-sm text-zinc-400">
                 {formatDuration(option.departure, option.arrival)}
+              </p>
+
+              <p className="text-xs text-zinc-500 mt-1">
+                {getRecoveryReason(option, index, trip)}
               </p>
 
               <p className="mt-1 text-sm text-zinc-200">
