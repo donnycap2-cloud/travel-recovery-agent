@@ -20,6 +20,7 @@ function toEpochSeconds(value: string | null | undefined): number | null {
 export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   const windowStart = new Date().toISOString();
   const windowEnd = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+  let tripsProcessed = 0;
   
   const { data: trips, error } = await supabase
     .from("trips")
@@ -38,6 +39,8 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     if (!trip.flight_1_number || !trip.flight_2_number || !trip.scheduled_departure_f2) {
       continue;
     }
+
+    tripsProcessed++;
 
     // 2. Fetch status for both legs
     const [statusF1, statusF2] = await Promise.all([
