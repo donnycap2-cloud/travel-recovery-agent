@@ -81,8 +81,8 @@ const MAJOR_HUBS = [
           flightNumber: flight.flight_iata,
           departure: dep,
           arrival: arr,
-          origin: flight.dep_iata,
-          destination: flight.arr_iata,
+          origin: flight.dep_iata ?? connectionAirport,
+          destination: flight.arr_iata ?? destinationAirport,
           duration: calculateDuration(dep, arr)
         }
   
