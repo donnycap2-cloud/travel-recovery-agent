@@ -45,37 +45,32 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       getFlightStatus(trip.flight_2_number)
     ]);
 
-    await supabase
+    const estimatedArrivalF1 =
+    statusF1?.estimatedArrival ??
+    statusF1?.actualArrival ??
+    trip.scheduled_arrival_f1;
+  
+  const estimatedDepartureF2 =
+    statusF2?.estimatedDeparture ??
+    statusF2?.actualDeparture ??
+    trip.scheduled_departure_f2;
+  
+  await supabase
     .from("trips")
     .update({
-      estimated_arrival_f1:
-        statusF1?.estimatedArrival ??
-        statusF1?.actualArrival ??
-        trip.scheduled_arrival_f1,
-  
-      estimated_departure_f2:
-        statusF2?.estimatedDeparture ??
-        statusF2?.actualDeparture ??
-        trip.scheduled_departure_f2
+      estimated_arrival_f1: estimatedArrivalF1,
+      estimated_departure_f2: estimatedDepartureF2
     })
     .eq("id", trip.id);
 
     // 3. Determine estimated arrival for flight 1
     // Prefer: arr_actual -> arr_estimated -> arr_time.
     // Our flight-status helper exposes only estimated; fall back to scheduled from trip.
-    const arrivalF1Seconds =
-      toEpochSeconds(trip.estimated_arrival_f1) ??
-      toEpochSeconds(trip.scheduled_arrival_f1) ??
-      toEpochSeconds(statusF1?.actualArrival ?? null) ??
-      toEpochSeconds(statusF1?.estimatedArrival ?? null);
+    const arrivalF1Seconds = toEpochSeconds(estimatedArrivalF1);
 
     // Determine departure time of flight 2
     // Prefer: actual -> estimated -> scheduled
-    const departureF2Seconds =
-      toEpochSeconds(trip.estimated_departure_f2) ??
-      toEpochSeconds(trip.scheduled_departure_f2) ??
-      toEpochSeconds(statusF2?.actualDeparture ?? null) ??
-      toEpochSeconds(statusF2?.estimatedDeparture ?? null);
+    const departureF2Seconds = toEpochSeconds(estimatedDepartureF2);
 
     if (arrivalF1Seconds == null || departureF2Seconds == null) {
       continue;
