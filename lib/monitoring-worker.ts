@@ -121,7 +121,8 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
       const options = await generateRecoveryPlan(
         trip.connection_airport,
-        trip.destination_airport
+        trip.destination_airport,
+        trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1
       );
 
       await supabase.from("landing_plans").insert({
@@ -135,7 +136,8 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
       const options = await generateRecoveryPlan(
         trip.connection_airport,
-        trip.destination_airport
+        trip.destination_airport,
+        trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1
       );
     
       const { data: existingPlans } = await supabase
