@@ -49,6 +49,7 @@ export interface LandingPlanRow {
     flightNumber: string
     departure: string
     arrival: string
+    duration: string
   }[] | null
 }
 
