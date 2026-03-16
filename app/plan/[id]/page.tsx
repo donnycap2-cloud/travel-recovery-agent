@@ -10,6 +10,16 @@ function formatTime(time: string) {
   });
 }
 
+function formatDuration(dep: string, arr: string) {
+  const diff = new Date(arr).getTime() - new Date(dep).getTime()
+
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+
+  return `${hours}h ${remainingMinutes}m`
+}
+
 function getDelayImpact(trip: any) {
   if (!trip?.estimated_arrival_f1 || !trip?.scheduled_departure_f2) {
     return null;
@@ -95,7 +105,7 @@ export default async function PlanPage({
               </p>
 
               <p className="text-sm text-zinc-400">
-                {option.duration}
+                {formatDuration(option.departure, option.arrival)}
               </p>
 
               <p className="mt-1 text-sm text-zinc-200">
