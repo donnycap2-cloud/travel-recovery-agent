@@ -1,4 +1,15 @@
-type RecoveryOption = {
+const MAJOR_HUBS = [
+    "ATL",
+    "DFW",
+    "ORD",
+    "DEN",
+    "CLT",
+    "IAH",
+    "PHX",
+    "LAS"
+  ]
+  
+  type RecoveryOption = {
     flightNumber: string
     airline: string
     departure: string
@@ -10,6 +21,19 @@ type RecoveryOption = {
   
   const AIRLABS_BASE_URL = "https://airlabs.co/api/v9"
   
+  async function getSchedules(dep: string, arr: string, apiKey: string) {
+    const url =
+      `${AIRLABS_BASE_URL}/schedules` +
+      `?dep_iata=${dep}` +
+      `&arr_iata=${arr}` +
+      `&api_key=${apiKey}`
+  
+    const res = await fetch(url)
+    const data = await res.json()
+  
+    return data?.response ?? []
+  }
+  
   function calculateDuration(dep: string, arr: string) {
     const diff = new Date(arr).getTime() - new Date(dep).getTime()
   
@@ -19,7 +43,7 @@ type RecoveryOption = {
   
     return `${hours}h ${remainingMinutes}m`
   }
-
+  
   export async function generateRecoveryPlan(
     connectionAirport: string,
     destinationAirport: string,
@@ -27,20 +51,7 @@ type RecoveryOption = {
   ): Promise<RecoveryOption[]> {
   
     const apiKey = process.env.AIRLABS_API_KEY
-  
-    const url =
-      `${AIRLABS_BASE_URL}/schedules` +
-      `?dep_iata=${connectionAirport}` +
-      `&arr_iata=${destinationAirport}` +
-      `&api_key=${apiKey}`
-  
-    const res = await fetch(url)
-  
-    const data = await res.json()
-  
-    if (!data?.response) {
-      return []
-    }
+    if (!apiKey) return []
   
     const arrival = arrivalTime ? new Date(arrivalTime) : null
   
@@ -51,43 +62,87 @@ type RecoveryOption = {
         ? new Date(arrival.getTime() + MCT_MINUTES * 60 * 1000)
         : null
   
-        const flights: RecoveryOption[] = data.response
-        .map((flight: any) => {
-      
-          const dep = flight.dep_time
-          const arr = flight.arr_time
-      
-          if (!dep || !arr) return null
-      
-          return {
-            airline: flight.airline_iata ?? "Airline",
-            flightNumber: flight.flight_iata,
-            departure: dep,
-            arrival: arr,
-            origin: flight.dep_iata,
-            destination: flight.arr_iata,
-            duration: calculateDuration(dep, arr)
-          }
-      
-        })
-        .filter((flight: RecoveryOption | null): flight is RecoveryOption => flight !== null)
-      .filter((flight: RecoveryOption) => {
+    const directSchedules = await getSchedules(
+      connectionAirport,
+      destinationAirport,
+      apiKey
+    )
   
-        if (!flight.departure) return false
+    let flights: RecoveryOption[] = directSchedules
+      .map((flight: any) => {
+  
+        const dep = flight.dep_time
+        const arr = flight.arr_time
+  
+        if (!dep || !arr) return null
+  
+        return {
+          airline: flight.airline_iata ?? "Airline",
+          flightNumber: flight.flight_iata,
+          departure: dep,
+          arrival: arr,
+          origin: flight.dep_iata,
+          destination: flight.arr_iata,
+          duration: calculateDuration(dep, arr)
+        }
+  
+      })
+      .filter((flight: RecoveryOption | null): flight is RecoveryOption => flight !== null)
+      .filter((flight: RecoveryOption) => {
   
         const departureTime = new Date(flight.departure)
   
         if (!earliestPossibleDeparture) return true
   
         return departureTime > earliestPossibleDeparture
-  
       })
+  
+    // SEARCH 1-STOP OPTIONS IF NOT ENOUGH DIRECT FLIGHTS
+    if (flights.length < 3) {
+  
+      for (const hub of MAJOR_HUBS) {
+  
+        if (hub === connectionAirport || hub === destinationAirport) {
+          continue
+        }
+  
+        const firstLegs = await getSchedules(connectionAirport, hub, apiKey)
+        const secondLegs = await getSchedules(hub, destinationAirport, apiKey)
+  
+        for (const f1 of firstLegs.slice(0, 2)) {
+          for (const f2 of secondLegs.slice(0, 2)) {
+  
+            if (!f1.dep_time || !f1.arr_time || !f2.dep_time || !f2.arr_time) {
+              continue
+            }
+  
+            const arrivalHub = new Date(f1.arr_time)
+            const departHub = new Date(f2.dep_time)
+  
+            const layoverMinutes =
+              (departHub.getTime() - arrivalHub.getTime()) / 60000
+  
+            if (layoverMinutes < 45) continue
+  
+            flights.push({
+              airline: f1.airline_iata ?? "Airline",
+              flightNumber: `${f1.flight_iata} → ${f2.flight_iata}`,
+              departure: f1.dep_time,
+              arrival: f2.arr_time,
+              origin: connectionAirport,
+              destination: destinationAirport,
+              duration: calculateDuration(f1.dep_time, f2.arr_time)
+            })
+          }
+        }
+      }
+    }
+  
+    return flights
       .sort(
-        (a: RecoveryOption, b: RecoveryOption) =>
+        (a, b) =>
           new Date(a.arrival).getTime() -
           new Date(b.arrival).getTime()
       )
       .slice(0, 3)
-  
-    return flights
   }
