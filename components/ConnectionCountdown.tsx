@@ -3,29 +3,44 @@
 import { useEffect, useState } from "react"
 
 export default function ConnectionCountdown({
-  departure
-}: {
-  departure: string | null
-}) {
+    departure,
+    arrival
+  }: {
+    departure: string | null
+    arrival: string | null
+  }) {
 
-  const [remaining, setRemaining] = useState<number | null>(null)
+    const [remaining, setRemaining] = useState<{
+        timeToDeparture: number
+        connectionMargin: number
+      } | null>(null)
 
   useEffect(() => {
 
     if (!departure) return
 
     const update = () => {
+        if (!departure || !arrival) return
+      
         const now = Date.now()
       
-        const departureDate = new Date(departure!)
+        const departureDate = new Date(departure)
+        const arrivalDate = new Date(arrival)
       
-        // convert UTC → local time
+        // fix timezone (same as before)
         const localDeparture =
           departureDate.getTime() + departureDate.getTimezoneOffset() * 60000
       
-        const diff = localDeparture - now
+        const localArrival =
+          arrivalDate.getTime() + arrivalDate.getTimezoneOffset() * 60000
       
-        setRemaining(Math.max(0, Math.floor(diff / 1000)))
+        const timeToDeparture = localDeparture - now
+        const connectionMargin = localDeparture - localArrival
+      
+        setRemaining({
+          timeToDeparture: Math.max(0, Math.floor(timeToDeparture / 1000)),
+          connectionMargin: Math.floor(connectionMargin / 60000) // minutes
+        })
       }
 
     update()
@@ -36,14 +51,32 @@ export default function ConnectionCountdown({
 
   }, [departure])
 
-  if (remaining === null) return null
+  if (!remaining) return null
 
-  const hours = Math.floor(remaining / 3600)
-  const minutes = Math.floor((remaining % 3600) / 60)
+  const hours = Math.floor(remaining.timeToDeparture / 3600)
+  const minutes = Math.floor((remaining.timeToDeparture % 3600) / 60)
+  
+  const margin = remaining.connectionMargin
   
   return (
-    <p className="text-lg font-semibold text-zinc-50">
-      {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
-    </p>
+<div className="space-y-1">
+  <p className="text-lg font-semibold text-zinc-50">
+    {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`} until departure
+  </p>
+
+  <p
+    className={`text-sm font-medium ${
+      margin < 0
+        ? "text-red-400"
+        : margin < 30
+        ? "text-yellow-400"
+        : "text-green-400"
+    }`}
+  >
+    {margin < 0
+      ? `Missed by ${Math.abs(margin)} min`
+      : `${margin} min connection`}
+  </p>
+</div>
   )
 }
