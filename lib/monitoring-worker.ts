@@ -62,6 +62,11 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     statusF2?.estimatedDeparture ??
     trip.scheduled_departure_f2;
   
+    console.log("TIMES CHECK:", {
+      estimatedArrivalF1,
+      estimatedDepartureF2
+    });
+
   await supabase
     .from("trips")
     .update({
