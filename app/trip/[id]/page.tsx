@@ -71,17 +71,19 @@ export default async function TripMonitorPage({
 
             <div className="mt-2 space-y-1 text-sm text-zinc-200">
 
-              <p>
-                Flight 1 arrival:
-                <span className="font-medium text-zinc-100 ml-1">
-                  {trip.estimated_arrival_f1
-                    ? new Date(trip.estimated_arrival_f1).toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit"
-                      })
-                    : "—"}
-                </span>
-              </p>
+            <p>
+              Flight 1 arrival:
+              <span className="font-medium text-zinc-100 ml-1">
+                {trip.estimated_arrival_f1 || trip.scheduled_arrival_f1
+                  ? new Date(
+                      trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1
+                    ).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit"
+                    })
+                  : "—"}
+              </span>
+            </p>
 
               <p>
                 Flight 2 departure:
