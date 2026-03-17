@@ -48,9 +48,12 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       dep2: trip.scheduled_departure_f2
     });
 
-    if (!trip.flight_1_number || !trip.flight_2_number || !trip.scheduled_departure_f2) {
+    // Only require flight numbers
+    if (!trip.flight_1_number || !trip.flight_2_number) {
       continue;
     }
+
+    console.log("PROCESSING TRIP:", trip.id);
 
     tripsProcessed++;
 
