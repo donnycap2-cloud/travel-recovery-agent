@@ -42,6 +42,12 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   for (const raw of trips as TripRow[]) {
     const trip = raw;
 
+    console.log("TRIP CHECK:", {
+      f1: trip.flight_1_number,
+      f2: trip.flight_2_number,
+      dep2: trip.scheduled_departure_f2
+    });
+
     if (!trip.flight_1_number || !trip.flight_2_number || !trip.scheduled_departure_f2) {
       continue;
     }
