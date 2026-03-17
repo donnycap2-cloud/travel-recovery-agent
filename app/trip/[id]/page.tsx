@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 import { MobileHeader } from "@/components/MobileHeader";
 import Link from "next/link";
