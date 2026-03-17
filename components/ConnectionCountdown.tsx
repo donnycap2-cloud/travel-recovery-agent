@@ -38,12 +38,12 @@ export default function ConnectionCountdown({
 
   if (remaining === null) return null
 
-  const minutes = Math.floor(remaining / 60)
-  const seconds = remaining % 60
-
+  const hours = Math.floor(remaining / 3600)
+  const minutes = Math.floor((remaining % 3600) / 60)
+  
   return (
     <p className="text-lg font-semibold text-zinc-50">
-      {minutes}:{seconds.toString().padStart(2, "0")}
+      {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
     </p>
   )
 }
