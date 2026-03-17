@@ -53,13 +53,13 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     ]);
 
     const estimatedArrivalF1 =
-    statusF1?.estimatedArrival ??
     statusF1?.actualArrival ??
+    statusF1?.estimatedArrival ??
     trip.scheduled_arrival_f1;
   
-  const estimatedDepartureF2 =
-    statusF2?.estimatedDeparture ??
+    const estimatedDepartureF2 =
     statusF2?.actualDeparture ??
+    statusF2?.estimatedDeparture ??
     trip.scheduled_departure_f2;
   
   await supabase
