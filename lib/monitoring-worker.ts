@@ -18,6 +18,12 @@ function toEpochSeconds(value: string | null | undefined): number | null {
 }
 
 export async function runMonitoringCycle(): Promise<MonitoringSummary> {
+
+  await supabase.from("debug_logs").insert({
+    message: "MONITOR STARTED",
+    created_at: new Date().toISOString()
+  });
+
   const windowStart = new Date().toISOString();
   const windowEnd = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
   let tripsProcessed = 0;
@@ -25,13 +31,15 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   console.log("🔥 MONITOR FUNCTION STARTED");
 
   const { data: trips, error } = await supabase
-    .from("trips")
-    .select("*")
-    .eq("status", "active")
-    .gte("scheduled_departure_f1", windowStart)
-    .lte("scheduled_departure_f1", windowEnd);
+  .from("trips")
+  .select("*")
+  .eq("status", "active");
 
-    console.log("TRIPS RETURNED:", trips?.map(t => t.id));
+await supabase.from("debug_logs").insert({
+  message: `TRIPS FOUND: ${trips?.length ?? 0}`,
+  created_at: new Date().toISOString()
+});
+
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
@@ -41,12 +49,17 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
   for (const raw of trips as TripRow[]) {
     const trip = raw;
-
-    console.log("TRIP CHECK:", {
-      f1: trip.flight_1_number,
-      f2: trip.flight_2_number,
-      dep2: trip.scheduled_departure_f2
+  
+    await supabase.from("debug_logs").insert({
+      message: `PROCESSING TRIP: ${trip.id}`,
+      created_at: new Date().toISOString()
     });
+
+    await supabase.from("debug_logs").insert({
+      message: `FIELDS CHECK: f1=${trip.flight_1_number}, f2=${trip.flight_2_number}, dep2=${trip.scheduled_departure_f2}`,
+      created_at: new Date().toISOString()
+    });
+    
 
     // Only require flight numbers
     if (!trip.flight_1_number || !trip.flight_2_number) {
@@ -73,6 +86,11 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     statusF2?.estimatedDeparture ??
     trip.scheduled_departure_f2;
   
+    await supabase.from("debug_logs").insert({
+      message: `TIME CHECK: arrival=${estimatedArrivalF1}, departure=${estimatedDepartureF2}`,
+      created_at: new Date().toISOString()
+    });
+
     console.log("TIMES CHECK:", {
       estimatedArrivalF1,
       estimatedDepartureF2
