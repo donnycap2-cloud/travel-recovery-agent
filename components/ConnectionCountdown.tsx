@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from "react"
 
+function formatMinutes(minutes: number) {
+    const abs = Math.abs(minutes)
+  
+    const h = Math.floor(abs / 60)
+    const m = abs % 60
+  
+    if (h > 0) return `${h}h ${m}m`
+    return `${m}m`
+  }
+
 export default function ConnectionCountdown({
     departure,
     arrival
@@ -74,8 +84,8 @@ export default function ConnectionCountdown({
     }`}
   >
     {margin < 0
-      ? `Missed by ${Math.abs(margin)} min`
-      : `${margin} min connection`}
+    ? `Missed by ${formatMinutes(margin)}`
+    : `${formatMinutes(margin)} connection`}
   </p>
 </div>
   )
