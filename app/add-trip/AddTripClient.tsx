@@ -113,10 +113,11 @@ export function AddTripClient() {
           </span>
           <input
             name="originAirport"
-            placeholder="e.g. STX"
+            placeholder="e.g. ATL"
             className="w-full rounded-2xl bg-zinc-950/40 px-4 py-3 text-sm text-zinc-100 ring-1 ring-white/10"
           />
         </label>
+        <FieldError message={errors.originAirport} />
       </div>
 
       <form action={action} className="space-y-3">
