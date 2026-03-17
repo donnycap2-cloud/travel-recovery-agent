@@ -14,7 +14,7 @@ export type FetchFlightDataState =
   | {
       status: "idle" | "error";
       message?: string;
-      fieldErrors?: Partial<Record<"flight1" | "flight2" | "date", string>>;
+      fieldErrors?: Partial<Record<"flight1" | "flight2" | "date" | "originAirport", string>>;
       values?: { flight1?: string; flight2?: string; date?: string };
     }
   | {
