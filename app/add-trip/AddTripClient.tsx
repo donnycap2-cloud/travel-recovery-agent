@@ -106,21 +106,23 @@ export function AddTripClient() {
     <main>
       <MobileHeader title="Add trip" backHref="/" />
 
-      <div>
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium text-zinc-300">
-            Flight 1 origin airport
-          </span>
-          <input
-            name="originAirport"
-            placeholder="e.g. ATL"
-            className="w-full rounded-2xl bg-zinc-950/40 px-4 py-3 text-sm text-zinc-100 ring-1 ring-white/10"
-          />
-        </label>
-        <FieldError message={errors.originAirport} />
-      </div>
-
       <form action={action} className="space-y-3">
+
+        <div>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-zinc-300">
+              Flight 1 origin airport
+            </span>
+            <input
+              name="originAirport"
+              defaultValue={values.originAirport}
+              placeholder="e.g. STX"
+              className="w-full rounded-2xl ..."
+            />
+          </label>
+          <FieldError message={errors.originAirport} />
+        </div>
+
         <Card className="space-y-3">
           <div>
             <label className="block">
