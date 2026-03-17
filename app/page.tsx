@@ -9,7 +9,6 @@ export default async function HomePage() {
   const { data: trips } = await supabase
     .from("trips")
     .select("*")
-    .order("created_at", { ascending: false })
 
   return (
     <main>
