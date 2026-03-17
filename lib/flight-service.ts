@@ -57,28 +57,35 @@ export async function resolveFlightInstance(
 
   if (response && response.length > 0) {
 
-    let flight = response[0];
-  
-    if (date) {
-  
-      const target = new Date(date).getTime();
-  
-      flight = response.reduce((closest, current) => {
-  
-        const closestTime = new Date(closest.dep_time ?? "").getTime();
-        const currentTime = new Date(current.dep_time ?? "").getTime();
-  
-        if (!closest.dep_time) return current;
-        if (!current.dep_time) return closest;
-  
-        const closestDiff = Math.abs(closestTime - target);
-        const currentDiff = Math.abs(currentTime - target);
-  
-        return currentDiff < closestDiff ? current : closest;
-  
-      });
-  
-    }
+  // STEP 1: filter by correct origin
+  let candidates = response.filter(
+    (f) => f.dep_iata === originAirport
+  );
+
+  // fallback if nothing matches (optional but safe)
+  if (candidates.length === 0) {
+    candidates = response;
+  }
+
+  // STEP 2: pick best by date (if provided)
+  let flight = candidates[0];
+
+  if (date) {
+    const target = new Date(date).getTime();
+
+    flight = candidates.reduce((closest, current) => {
+      const closestTime = new Date(closest.dep_time ?? "").getTime();
+      const currentTime = new Date(current.dep_time ?? "").getTime();
+
+      if (!closest.dep_time) return current;
+      if (!current.dep_time) return closest;
+
+      const closestDiff = Math.abs(closestTime - target);
+      const currentDiff = Math.abs(currentTime - target);
+
+      return currentDiff < closestDiff ? current : closest;
+    });
+  }
 
     return {
       flightId: flight.flight_iata ?? flightNumber,
