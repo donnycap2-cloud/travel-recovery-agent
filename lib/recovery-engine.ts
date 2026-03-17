@@ -93,6 +93,8 @@ const MAJOR_HUBS = [
   
       })
 
+      .filter((flight: RecoveryOption | null): flight is RecoveryOption => flight !== null)
+
       .filter((flight: RecoveryOption) => {
         if (!flight.departure || !flight.arrival) return false;
       
@@ -101,6 +103,15 @@ const MAJOR_HUBS = [
         // ❌ remove past flights
         if (departureTime < now) return false;
       
+        const arrivalTimeAtConnection = arrival;
+
+        if (arrivalTimeAtConnection) {
+          const bufferMinutes =
+            (departureTime.getTime() - arrivalTimeAtConnection.getTime()) / 60000;
+        
+          if (bufferMinutes < 60) return false;
+        }
+
         // ❌ enforce connection buffer
         if (earliestDeparture && departureTime < earliestDeparture) return false;
       
@@ -159,7 +170,7 @@ const MAJOR_HUBS = [
     const uniqueFlights = new Map();
 
     for (const flight of flights) {
-      const key = flight.departure + flight.arrival;
+        const key = `${flight.departure}-${flight.arrival}-${flight.origin}-${flight.destination}`;
     
       if (!uniqueFlights.has(key)) {
         uniqueFlights.set(key, flight);
@@ -168,25 +179,17 @@ const MAJOR_HUBS = [
     
     flights = Array.from(uniqueFlights.values());
     
-    flights.sort((a, b) => {
-
-        const aSameAirline = a.flightNumber.startsWith(originalAirline);
-        const bSameAirline = b.flightNumber.startsWith(originalAirline);
-      
-        if (aSameAirline && !bSameAirline) return -1;
-        if (!aSameAirline && bSameAirline) return 1;
-      
-        return new Date(a.arrival).getTime() - new Date(b.arrival).getTime();
-      
-      });
-
-      const ranked = flights
-      .sort(
-        (a, b) =>
-          new Date(a.arrival).getTime() -
-          new Date(b.arrival).getTime()
-      )
-      .slice(0, 3)
+    const ranked = flights
+    .sort((a, b) => {
+      const aSameAirline = a.flightNumber?.startsWith(originalAirline);
+      const bSameAirline = b.flightNumber?.startsWith(originalAirline);
+  
+      if (aSameAirline && !bSameAirline) return -1;
+      if (!aSameAirline && bSameAirline) return 1;
+  
+      return new Date(a.arrival).getTime() - new Date(b.arrival).getTime();
+    })
+    .slice(0, 3);
     
     if (ranked.length > 0) {
       return ranked
