@@ -44,6 +44,60 @@ const MAJOR_HUBS = [
     return `${hours}h ${remainingMinutes}m`
   }
   
+  function getMCT(airport: string): number {
+    const MCT_MAP: Record<string, number> = {
+      // 🔥 Major US hubs (busy, large airports)
+      ATL: 60,
+      DFW: 60,
+      ORD: 60,
+      DEN: 60,
+      CLT: 60,
+      IAH: 60,
+      PHX: 60,
+      LAS: 60,
+  
+      // 🔥 Large complex airports (often need more time)
+      LAX: 75,
+      JFK: 75,
+      EWR: 75,
+      MIA: 75,
+      SFO: 75,
+      SEA: 75,
+  
+      // 🔥 Medium airports (generally easier connections)
+      BOS: 60,
+      DCA: 60,
+      IAD: 60,
+      PHL: 60,
+      MSP: 60,
+      DTW: 60,
+      BWI: 60,
+      SAN: 60,
+      SLC: 60,
+      TPA: 60,
+      FLL: 60,
+      HNL: 60,
+  
+      // 🔥 Smaller / easier airports
+      AUS: 50,
+      SJC: 50,
+      RDU: 50,
+      MCI: 50,
+      SMF: 50,
+  
+      // 🔥 Caribbean (your use case 👇)
+      STX: 45,
+      STT: 45,
+      SJU: 50,
+      NAS: 50,
+      BGI: 50,
+  
+      // 🔥 Default fallback
+    };
+  
+    return MCT_MAP[airport] ?? 60;
+  }
+
   export async function generateRecoveryPlan(
     connectionAirport: string,
     destinationAirport: string,
@@ -58,7 +112,7 @@ const MAJOR_HUBS = [
   
     const arrival = arrivalTime ? new Date(arrivalTime) : null
   
-    const MCT_MINUTES = 60
+    const MCT_MINUTES = getMCT(connectionAirport)
   
     const earliestDeparture =
       arrival
