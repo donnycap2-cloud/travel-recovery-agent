@@ -156,6 +156,18 @@ const MAJOR_HUBS = [
       }
     }
   
+    const uniqueFlights = new Map();
+
+    for (const flight of flights) {
+      const key = flight.departure + flight.arrival;
+    
+      if (!uniqueFlights.has(key)) {
+        uniqueFlights.set(key, flight);
+      }
+    }
+    
+    flights = Array.from(uniqueFlights.values());
+    
     flights.sort((a, b) => {
 
         const aSameAirline = a.flightNumber.startsWith(originalAirline);
