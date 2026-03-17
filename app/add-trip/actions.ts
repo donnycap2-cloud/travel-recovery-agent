@@ -15,7 +15,7 @@ export type FetchFlightDataState =
       status: "idle" | "error";
       message?: string;
       fieldErrors?: Partial<Record<"flight1" | "flight2" | "date" | "originAirport", string>>;
-      values?: { flight1?: string; flight2?: string; date?: string };
+      values?: { flight1?: string; flight2?: string; date?: string; originAirport?: string };
     }
   | {
       status: "success";
@@ -103,7 +103,7 @@ export async function fetchFlightData(
       status: "error",
       message: "Fix the highlighted fields.",
       fieldErrors,
-      values: { flight1: rawFlight1, flight2: rawFlight2, date: rawDate }
+      values: { flight1: rawFlight1, flight2: rawFlight2, date: rawDate, originAirport }
     };
   }
 
