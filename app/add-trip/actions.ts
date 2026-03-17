@@ -78,16 +78,21 @@ export async function fetchFlightData(
   const rawFlight2 = String(formData.get("flight2") ?? "");
   const rawDate = String(formData.get("date") ?? "");
 
+  const originAirport = String(formData.get("originAirport") ?? "").toUpperCase()
   const flight1 = normalizeFlightNumber(rawFlight1);
   const flight2 = normalizeFlightNumber(rawFlight2);
   const date = rawDate.trim();
 
-  const fieldErrors: Partial<Record<"flight1" | "flight2" | "date", string>> = {};
+  const fieldErrors: Partial<Record<"originAirport" | "flight1" | "flight2" | "date", string>> = {};
   if (!flight1) fieldErrors.flight1 = "Enter flight 1 number.";
   else if (!isValidFlightNumber(flight1)) fieldErrors.flight1 = "Use format like AA123.";
 
   if (!flight2) fieldErrors.flight2 = "Enter flight 2 number.";
   else if (!isValidFlightNumber(flight2)) fieldErrors.flight2 = "Use format like AA123.";
+
+  if (!originAirport) {
+    fieldErrors.originAirport = "Enter origin airport."
+  }
 
   const baseDate = parseDateInput(date);
   if (!date) fieldErrors.date = "Select a date.";
@@ -103,7 +108,7 @@ export async function fetchFlightData(
   }
 
   const flight1Resolved = await resolveFlightInstance(
-    "", // unknown for first leg
+    originAirport,
     flight1,
     date
   );
