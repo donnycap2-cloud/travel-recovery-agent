@@ -22,6 +22,8 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   const windowEnd = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
   let tripsProcessed = 0;
   
+  console.log("🔥 MONITOR FUNCTION STARTED");
+
   const { data: trips, error } = await supabase
     .from("trips")
     .select("*")
