@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { runMonitoringCycle } from "@/lib/monitoring-worker";
 
 export async function GET() {
-  console.log("🔥 NEW VERSION");
+  const result = await runMonitoringCycle();
 
-  return Response.json({
+  return NextResponse.json({
     ok: true,
-    version: "NEW CODE RUNNING"
+    summary: result
   });
 }
