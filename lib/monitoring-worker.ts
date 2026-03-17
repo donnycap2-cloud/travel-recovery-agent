@@ -5,6 +5,7 @@ import { getFlightStatus } from "@/lib/flight-service";
 import { calculateConnectionRisk } from "@/lib/risk-engine";
 import type { TripRow, RiskEventRow, LandingPlanRow } from "@/types/database";
 import { generateRecoveryPlan } from "@/lib/recovery-engine";
+import { getMCT } from "@/lib/mct";
 
 type MonitoringSummary = {
   tripsProcessed: number;
@@ -117,9 +118,8 @@ await supabase.from("debug_logs").insert({
       continue;
     }
 
-    // 5. Run risk calculation. For now, assume a 60-minute MCT.
-    const DEFAULT_MCT_MINUTES = 60;
-    const mctMinutes = DEFAULT_MCT_MINUTES;
+    // 5. Run risk calculation.
+    const mctMinutes = getMCT(trip.connection_airport);
     const risk = calculateConnectionRisk(
       arrivalF1Seconds,
       departureF2Seconds,
