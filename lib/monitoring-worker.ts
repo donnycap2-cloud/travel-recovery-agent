@@ -129,7 +129,15 @@ await supabase.from("debug_logs").insert({
     const previousState = (trip.monitoring_state as string | null) ?? "safe";
     const newState = risk.state;
 
-    if (previousState === newState && trip.connection_time_remaining === risk.connectionTimeRemaining) {
+    if (previousState === newState) {
+      // still update connection time even if state same
+      await supabase
+        .from("trips")
+        .update({
+          connection_time_remaining: risk.connectionTimeRemaining
+        })
+        .eq("id", trip.id);
+    
       continue;
     }
 
