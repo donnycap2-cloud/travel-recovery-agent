@@ -15,11 +15,18 @@ export default function ConnectionCountdown({
     if (!departure) return
 
     const update = () => {
-      const diff =
-        new Date(departure).getTime() - new Date().getTime()
-
-      setRemaining(Math.max(0, Math.floor(diff / 1000)))
-    }
+        const now = Date.now()
+      
+        const departureDate = new Date(departure!)
+      
+        // convert UTC → local time
+        const localDeparture =
+          departureDate.getTime() + departureDate.getTimezoneOffset() * 60000
+      
+        const diff = localDeparture - now
+      
+        setRemaining(Math.max(0, Math.floor(diff / 1000)))
+      }
 
     update()
 
