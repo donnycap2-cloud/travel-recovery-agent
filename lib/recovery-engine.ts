@@ -60,10 +60,12 @@ const MAJOR_HUBS = [
   
     const MCT_MINUTES = 60
   
-    const earliestPossibleDeparture =
+    const earliestDeparture =
       arrival
         ? new Date(arrival.getTime() + MCT_MINUTES * 60 * 1000)
         : null
+
+    const now = new Date();
   
     const directSchedules = await getSchedules(
       connectionAirport,
@@ -90,14 +92,19 @@ const MAJOR_HUBS = [
         }
   
       })
-      .filter((flight: RecoveryOption | null): flight is RecoveryOption => flight !== null)
+
       .filter((flight: RecoveryOption) => {
-  
-        const departureTime = new Date(flight.departure)
-  
-        if (!earliestPossibleDeparture) return true
-  
-        return departureTime > earliestPossibleDeparture
+        if (!flight.departure || !flight.arrival) return false;
+      
+        const departureTime = new Date(flight.departure);
+      
+        // ❌ remove past flights
+        if (departureTime < now) return false;
+      
+        // ❌ enforce connection buffer
+        if (earliestDeparture && departureTime < earliestDeparture) return false;
+      
+        return true;
       })
   
     // SEARCH 1-STOP OPTIONS IF NOT ENOUGH DIRECT FLIGHTS
@@ -125,8 +132,16 @@ const MAJOR_HUBS = [
             const layoverMinutes =
               (departHub.getTime() - arrivalHub.getTime()) / 60000
   
-            if (layoverMinutes < 45) continue
+            if (layoverMinutes < 60) continue
   
+            const firstDeparture = new Date(f1.dep_time);
+
+            // must also respect original arrival buffer
+            if (earliestDeparture && firstDeparture < earliestDeparture) continue;
+            
+            // must not be in past
+            if (firstDeparture < now) continue;
+
             flights.push({
               airline: f1.airline_iata ?? "Airline",
               flightNumber: `${f1.flight_iata} → ${f2.flight_iata}`,
