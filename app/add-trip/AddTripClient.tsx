@@ -113,7 +113,7 @@ export function AddTripClient() {
           <div>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-zinc-300">
-                Flight 1 origin airport
+                Origin airport
               </span>
               <input
                 name="originAirport"
@@ -127,7 +127,7 @@ export function AddTripClient() {
 
           <div>
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-zinc-300">Flight 1 number</span>
+              <span className="mb-1 block text-xs font-medium text-zinc-300">Flight 1 Number</span>
               <input
                 name="flight1"
                 inputMode="text"
@@ -143,7 +143,7 @@ export function AddTripClient() {
 
           <div>
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-zinc-300">Flight 2 number</span>
+              <span className="mb-1 block text-xs font-medium text-zinc-300">Flight 2 Number</span>
               <input
                 name="flight2"
                 inputMode="text"
