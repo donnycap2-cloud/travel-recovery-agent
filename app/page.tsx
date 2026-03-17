@@ -1,14 +1,18 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+import { unstable_noStore as noStore } from "next/cache";
+
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { MobileHeader } from "@/components/MobileHeader"
 
-export const dynamic = "force-dynamic"
-
 export default async function HomePage() {
-
+  noStore();
   const { data: trips } = await supabase
     .from("trips")
     .select("*")
+    .order("created_at", { ascending: false });
 
   return (
     <main>
