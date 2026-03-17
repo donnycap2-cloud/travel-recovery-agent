@@ -23,19 +23,31 @@ function formatDuration(dep: string, arr: string) {
 function getRecoveryReason(option: any, index: number, trip: any) {
   const originalAirline = trip?.flight_2_number?.slice(0, 2);
 
+  const reasons: string[] = [];
+
+  // 1. Airline continuity (important for rebooking)
   if (option.flightNumber?.startsWith(originalAirline)) {
-    return "Same airline as your missed connection";
+    reasons.push("Same airline → easier rebooking");
   }
 
+  // 2. Arrival comparison
   if (index === 0) {
-    return "Fastest arrival to your destination";
+    reasons.push("Earliest arrival after missed connection");
   }
 
-  if (index === 1) {
-    return "Second fastest arrival option";
+  // 3. Timing realism (THIS is key)
+  if (trip?.estimated_arrival_f1 && option.departure) {
+    const arrival = new Date(trip.estimated_arrival_f1).getTime();
+    const departure = new Date(option.departure).getTime();
+
+    const bufferMinutes = Math.round((departure - arrival) / 60000);
+
+    if (bufferMinutes > 0) {
+      reasons.push(`${bufferMinutes} min to make this connection`);
+    }
   }
 
-  return "Alternative recovery option";
+  return reasons.join(". ") + ".";
 }
 
 function getDelayImpact(trip: any) {
