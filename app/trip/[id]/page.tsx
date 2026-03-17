@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+import { unstable_noStore as noStore } from "next/cache";
 
 import { MobileHeader } from "@/components/MobileHeader";
 import Link from "next/link";
@@ -21,11 +22,9 @@ function getRiskDisplay(state: string | null) {
   }
 }
 
-export default async function TripMonitorPage({
-  params
-}: {
-  params: { id: string };
-}) {
+export default async function TripMonitorPage({ params }: { params: { id: string } }) {
+  noStore();
+
   const { id } = params;
 
   const { data: trip } = await supabase
