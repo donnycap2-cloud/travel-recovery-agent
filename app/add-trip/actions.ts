@@ -83,7 +83,7 @@ export async function fetchFlightData(
   const flight2 = normalizeFlightNumber(rawFlight2);
   const date = rawDate.trim();
 
-  const fieldErrors: Partial<Record<"originAirport" | "flight1" | "flight2" | "date", string>> = {};
+  const fieldErrors: Partial<Record<"flight1" | "flight2" | "date" | "originAirport", string>> = {};
   if (!flight1) fieldErrors.flight1 = "Enter flight 1 number.";
   else if (!isValidFlightNumber(flight1)) fieldErrors.flight1 = "Use format like AA123.";
 
