@@ -10,15 +10,15 @@ import ConnectionCountdown from "@/components/ConnectionCountdown"
 function getRiskDisplay(state: string | null) {
   switch (state) {
     case "safe":
-      return { label: "Safe connection", color: "text-green-400" };
+      return { label: "You're on track to make your connection", color: "text-green-400" };
     case "tight":
-      return { label: "Tight connection", color: "text-yellow-400" };
+      return { label: "This connection is tight", color: "text-yellow-400" };
     case "likely_missed":
-      return { label: "Likely missed", color: "text-red-400" };
+      return { label: "You will likely miss this connection", color: "text-red-400" };
     case "impossible":
-      return { label: "Impossible connection", color: "text-red-600" };
+      return { label: "You will miss this connection", color: "text-red-600" };
     default:
-      return { label: "Unknown", color: "text-zinc-400" };
+      return { label: "Connection status unknown", color: "text-zinc-400" };
   }
 }
 
@@ -61,9 +61,14 @@ export default async function TripMonitorPage({ params }: { params: { id: string
         <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
           <p className="text-xs uppercase tracking-wide text-zinc-400">
             Connection Status
+            
           </p>
 
           <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+
+            <p className="text-sm text-zinc-400">
+              {trip.origin_airport} → {trip.connection_airport} → {trip.destination_airport}
+            </p>
 
             <p className="text-xs uppercase tracking-wide text-zinc-400">
               Flight Status
@@ -105,9 +110,9 @@ export default async function TripMonitorPage({ params }: { params: { id: string
             {risk.label}
           </p>
 
-          <div>
-            <p className="text-xs uppercase tracking-wide text-zinc-400">
-              Connection countdown
+          <div className="mt-2 space-y-1">
+            <p className={`text-lg font-semibold ${risk.color}`}>
+              {risk.label}
             </p>
 
             <ConnectionCountdown
