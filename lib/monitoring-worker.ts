@@ -134,7 +134,9 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       })
       .eq("id", trip.id);
 
-    stateChanges++;
+      if (previousState !== newState) {
+        stateChanges++;
+      }
 
     await supabase.from("debug_logs").insert({
       message: `UPDATED STATE: ${newState}, margin=${risk.connectionTimeRemaining}`,
@@ -148,12 +150,6 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       connection_time_remaining: risk.connectionTimeRemaining
     } satisfies Partial<RiskEventRow>);
 
-    await supabase
-      .from("trips")
-      .update({
-        monitoring_state: newState
-      })
-      .eq("id", trip.id);
 
 
     if (previousState !== "likely_missed" && newState === "likely_missed") {
