@@ -41,7 +41,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
 
 
-  const windowStart = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+  const windowStart = new Date(now - 12 * 60 * 60 * 1000).toISOString();
   const windowEnd = new Date(now + 12 * 60 * 60 * 1000).toISOString();
   
   const { data: trips, error } = await supabase
