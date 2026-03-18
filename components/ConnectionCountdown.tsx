@@ -36,7 +36,15 @@ export default function ConnectionCountdown({
         if (!departure) return
       
         const update = () => {
-      if (!departure || !arrival) return;
+
+          console.log("PARSED TIMES", {
+            departureRaw: departure,
+            departureParsed: new Date(departure!).toISOString(),
+            departureMs: new Date(departure!).getTime(),
+            nowMs: Date.now()
+          });
+        
+          if (!departure || !arrival) return
     
       const now = Date.now();
     
