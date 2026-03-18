@@ -18,7 +18,21 @@ function toEpochSeconds(value: string | null | undefined): number | null {
   return Number.isNaN(ms) ? null : Math.floor(ms / 1000);
 }
 
+let lastRun = 0;
+
 export async function runMonitoringCycle(): Promise<MonitoringSummary> {
+
+  const now = Date.now();
+
+  // ✅ Rate limiter
+  if (now - lastRun < 60000) {
+    console.log("Skipping — ran too recently");
+    return { tripsProcessed: 0, stateChanges: 0 };
+  }
+
+  lastRun = now;
+
+  console.log("RUN MONITOR:", new Date().toISOString());
 
   await supabase.from("debug_logs").insert({
     message: "MONITOR STARTED",
@@ -27,123 +41,97 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
   const windowStart = new Date().toISOString();
   const windowEnd = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
-  let tripsProcessed = 0;
-  
-  console.log("🔥 MONITOR FUNCTION STARTED");
 
   const { data: trips, error } = await supabase
-  .from("trips")
-  .select("*")
-  .eq("status", "active");
-
-await supabase.from("debug_logs").insert({
-  message: `TRIPS FOUND: ${trips?.length ?? 0}`,
-  created_at: new Date().toISOString()
-});
-
+    .from("trips")
+    .select("*")
+    .eq("status", "active")
+    .gte("scheduled_departure_f1", windowStart)
+    .lte("scheduled_departure_f1", windowEnd);
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
   }
 
+  console.log("Trips found:", trips.length);
+
+  await supabase.from("debug_logs").insert({
+    message: `TRIPS FOUND: ${trips.length}`,
+    created_at: new Date().toISOString()
+  });
+
+  let tripsProcessed = 0;
   let stateChanges = 0;
 
-  for (const raw of trips as TripRow[]) {
-    const trip = raw;
-  
+  for (const trip of trips as TripRow[]) {
+
     await supabase.from("debug_logs").insert({
       message: `PROCESSING TRIP: ${trip.id}`,
       created_at: new Date().toISOString()
     });
 
-    await supabase.from("debug_logs").insert({
-      message: `FIELDS CHECK: f1=${trip.flight_1_number}, f2=${trip.flight_2_number}, dep2=${trip.scheduled_departure_f2}`,
-      created_at: new Date().toISOString()
-    });
-    
-
-    // Only require flight numbers
     if (!trip.flight_1_number || !trip.flight_2_number) {
       continue;
     }
 
-    console.log("PROCESSING TRIP:", trip.id);
-
     tripsProcessed++;
 
-    // 2. Fetch status for both legs
+    // Fetch status
     const [statusF1, statusF2] = await Promise.all([
       getFlightStatus(trip.flight_1_number),
       getFlightStatus(trip.flight_2_number)
     ]);
 
     const estimatedArrivalF1 =
-    statusF1?.actualArrival ??
-    statusF1?.estimatedArrival ??
-    trip.scheduled_arrival_f1;
-  
+      statusF1?.actualArrival ??
+      statusF1?.estimatedArrival ??
+      trip.scheduled_arrival_f1;
+
     const estimatedDepartureF2 =
-    statusF2?.actualDeparture ??
-    statusF2?.estimatedDeparture ??
-    trip.scheduled_departure_f2;
-  
-    await supabase.from("debug_logs").insert({
-      message: `TIME CHECK: arrival=${estimatedArrivalF1}, departure=${estimatedDepartureF2}`,
-      created_at: new Date().toISOString()
-    });
+      statusF2?.actualDeparture ??
+      statusF2?.estimatedDeparture ??
+      trip.scheduled_departure_f2;
 
-    console.log("TIMES CHECK:", {
-      estimatedArrivalF1,
-      estimatedDepartureF2
-    });
+    await supabase
+      .from("trips")
+      .update({
+        estimated_arrival_f1: estimatedArrivalF1,
+        estimated_departure_f2: estimatedDepartureF2
+      })
+      .eq("id", trip.id);
 
-  await supabase
-    .from("trips")
-    .update({
-      estimated_arrival_f1: estimatedArrivalF1,
-      estimated_departure_f2: estimatedDepartureF2
-    })
-    .eq("id", trip.id);
-
-    // 3. Determine estimated arrival for flight 1
-    // Prefer: arr_actual -> arr_estimated -> arr_time.
-    // Our flight-status helper exposes only estimated; fall back to scheduled from trip.
     const arrivalF1Seconds = toEpochSeconds(estimatedArrivalF1);
-
-    // Determine departure time of flight 2
-    // Prefer: actual -> estimated -> scheduled
     const departureF2Seconds = toEpochSeconds(estimatedDepartureF2);
 
     if (arrivalF1Seconds == null || departureF2Seconds == null) {
       continue;
     }
 
-    // 5. Run risk calculation.
     const mctMinutes = getMCT(trip.connection_airport);
+
     const risk = calculateConnectionRisk(
       arrivalF1Seconds,
       departureF2Seconds,
       mctMinutes
     );
 
-    const previousState = (trip.monitoring_state as string | null) ?? "safe";
+    const previousState = trip.monitoring_state ?? "safe";
     const newState = risk.state;
 
+    // Always update connection time
+    await supabase
+      .from("trips")
+      .update({
+        connection_time_remaining: risk.connectionTimeRemaining
+      })
+      .eq("id", trip.id);
+
     if (previousState === newState) {
-      // still update connection time even if state same
-      await supabase
-        .from("trips")
-        .update({
-          connection_time_remaining: risk.connectionTimeRemaining
-        })
-        .eq("id", trip.id);
-    
       continue;
     }
 
-    stateChanges += previousState === newState ? 0 : 1;
+    stateChanges++;
 
-    // 7. Insert risk_events entry
     await supabase.from("risk_events").insert({
       trip_id: trip.id,
       previous_state: previousState,
@@ -151,73 +139,38 @@ await supabase.from("debug_logs").insert({
       connection_time_remaining: risk.connectionTimeRemaining
     } satisfies Partial<RiskEventRow>);
 
-    // 8. Update trip monitoring_state + connection_time_remaining
     await supabase
       .from("trips")
       .update({
-        monitoring_state: newState,
-        connection_time_remaining: risk.connectionTimeRemaining
+        monitoring_state: newState
       })
       .eq("id", trip.id);
 
-    // 9–10. Landing plan actions
-    if (previousState !== "likely_missed" && newState === "likely_missed") {
+    const options = await generateRecoveryPlan(
+      trip.connection_airport,
+      trip.destination_airport,
+      estimatedArrivalF1,
+      trip.flight_2_number
+    );
 
-      const options = await generateRecoveryPlan(
-        trip.connection_airport,
-        trip.destination_airport,
-        trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1,
-        trip.flight_2_number
-      );
-
-      console.log("RECOVERY OPTIONS:", options)
-
+    if (newState === "likely_missed") {
       await supabase.from("landing_plans").insert({
         trip_id: trip.id,
         created_at: new Date().toISOString(),
         reason: "connection risk",
         options
       } satisfies Partial<LandingPlanRow>);
+    }
 
-    } else if (previousState !== "impossible" && newState === "impossible") {
-
-      const options = await generateRecoveryPlan(
-        trip.connection_airport,
-        trip.destination_airport,
-        trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1,
-        trip.flight_2_number
-      );
-    
-      const { data: existingPlans } = await supabase
-        .from("landing_plans")
-        .select("id")
-        .eq("trip_id", trip.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
-    
-      if (existingPlans && existingPlans.length > 0) {
-    
-        await supabase
-          .from("landing_plans")
-          .update({
-            reason: "connection impossible",
-            options
-          })
-          .eq("id", existingPlans[0]!.id);
-    
-      } else {
-    
-        await supabase.from("landing_plans").insert({
-          trip_id: trip.id,
-          created_at: new Date().toISOString(),
-          reason: "connection impossible",
-          options
-        });
-    
-      }
+    if (newState === "impossible") {
+      await supabase.from("landing_plans").insert({
+        trip_id: trip.id,
+        created_at: new Date().toISOString(),
+        reason: "connection impossible",
+        options
+      });
     }
   }
 
-  return { tripsProcessed: trips.length, stateChanges };
+  return { tripsProcessed, stateChanges };
 }
-
