@@ -43,7 +43,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   const { data: trips, error } = await supabase
     .from("trips")
     .select("*")
-
+    .eq("status", "active")
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
