@@ -30,28 +30,21 @@ export default function ConnectionCountdown({
     if (!departure) return
 
     const update = () => {
-        if (!departure || !arrival) return
-      
-        const now = Date.now()
-      
-        const departureDate = new Date(departure)
-        const arrivalDate = new Date(arrival)
-      
-        // fix timezone (same as before)
-        const localDeparture =
-          departureDate.getTime() + departureDate.getTimezoneOffset() * 60000
-      
-        const localArrival =
-          arrivalDate.getTime() + arrivalDate.getTimezoneOffset() * 60000
-      
-        const timeToDeparture = localDeparture - now
-        const connectionMargin = localDeparture - localArrival
-      
-        setRemaining({
-          timeToDeparture: Math.max(0, Math.floor(timeToDeparture / 1000)),
-          connectionMargin: Math.floor(connectionMargin / 60000) // minutes
-        })
-      }
+      if (!departure || !arrival) return;
+    
+      const now = Date.now();
+    
+      const departureTime = new Date(departure).getTime();
+      const arrivalTime = new Date(arrival).getTime();
+    
+      const timeToDeparture = departureTime - now;
+      const connectionMargin = departureTime - arrivalTime;
+    
+      setRemaining({
+        timeToDeparture: Math.max(0, Math.floor(timeToDeparture / 1000)),
+        connectionMargin: Math.floor(connectionMargin / 60000)
+      });
+    };
 
     update()
 
