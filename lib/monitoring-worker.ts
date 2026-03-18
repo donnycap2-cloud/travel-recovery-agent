@@ -22,7 +22,6 @@ let lastRun = 0;
 
 export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
-  const now = Date.now();
 
   // ✅ Rate limiter
   if (now - lastRun < 60000) {
@@ -40,11 +39,17 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   });
 
 
+  const now = Date.now();
+
+  const windowStart = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+  const windowEnd = new Date(now + 12 * 60 * 60 * 1000).toISOString();
+  
   const { data: trips, error } = await supabase
     .from("trips")
     .select("*")
     .eq("status", "active")
-
+    .gte("scheduled_departure_f2", windowStart)
+    .lte("scheduled_departure_f2", windowEnd);
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
