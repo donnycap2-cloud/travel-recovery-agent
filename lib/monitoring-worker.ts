@@ -132,6 +132,11 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
     stateChanges++;
 
+    await supabase.from("debug_logs").insert({
+      message: `UPDATED STATE: ${newState}, margin=${risk.connectionTimeRemaining}`,
+      created_at: new Date().toISOString()
+    });
+
     await supabase.from("risk_events").insert({
       trip_id: trip.id,
       previous_state: previousState,
