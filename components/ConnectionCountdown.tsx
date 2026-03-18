@@ -25,11 +25,17 @@ export default function ConnectionCountdown({
         connectionMargin: number
       } | null>(null)
 
-  useEffect(() => {
+      useEffect(() => {
 
-    if (!departure) return
-
-    const update = () => {
+        console.log("COUNTDOWN INPUT", {
+          departure,
+          arrival,
+          now: new Date().toISOString()
+        });
+      
+        if (!departure) return
+      
+        const update = () => {
       if (!departure || !arrival) return;
     
       const now = Date.now();
