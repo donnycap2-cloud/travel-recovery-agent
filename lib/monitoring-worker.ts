@@ -107,7 +107,10 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       continue;
     }
 
-    const mctMinutes = getMCT(trip.connection_airport);
+    const mctMinutes = getMCT(
+      trip.connection_airport,
+      trip.destination_airport
+    );
 
     const risk = calculateConnectionRisk(
       arrivalF1Seconds,
