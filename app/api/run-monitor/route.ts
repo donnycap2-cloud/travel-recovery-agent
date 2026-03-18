@@ -1,9 +1,20 @@
-import { NextResponse } from "next/server";
 import { runMonitoringCycle } from "@/lib/monitoring-worker";
 
 export async function GET() {
-  return Response.json({
-    ok: true,
-    message: "monitor paused"
-  });
+  try {
+    const result = await runMonitoringCycle();
+
+    return Response.json({
+      ok: true,
+      summary: result
+    });
+
+  } catch (error) {
+    console.error("MONITOR ERROR:", error);
+
+    return Response.json({
+      ok: false,
+      error: "monitor failed"
+    });
+  }
 }
