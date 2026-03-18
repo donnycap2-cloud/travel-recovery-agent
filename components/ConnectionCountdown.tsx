@@ -38,11 +38,8 @@ export default function ConnectionCountdown({
         const arrivalDate = new Date(arrival)
       
         // fix timezone (same as before)
-        const localDeparture =
-          departureDate.getTime() + departureDate.getTimezoneOffset() * 60000
-      
-        const localArrival =
-          arrivalDate.getTime() + arrivalDate.getTimezoneOffset() * 60000
+        const localDeparture = departureDate.getTime()
+        const localArrival = arrivalDate.getTime()
       
         const timeToDeparture = localDeparture - now
         const connectionMargin = localDeparture - localArrival
