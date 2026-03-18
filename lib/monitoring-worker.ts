@@ -50,7 +50,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     )
     .lte(
       "scheduled_departure_f2",
-      new Date(now + 4 * 60 * 60 * 1000).toISOString() // 4h ahead
+      new Date(now + 12 * 60 * 60 * 1000).toISOString() // 4h ahead
     );
 
   if (error || !trips || trips.length === 0) {
