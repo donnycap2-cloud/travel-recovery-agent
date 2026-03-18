@@ -39,8 +39,6 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     created_at: new Date().toISOString()
   });
 
-  const windowStart = new Date().toISOString();
-  const windowEnd = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
 
   const { data: trips, error } = await supabase
     .from("trips")
@@ -83,14 +81,16 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     ]);
 
     const estimatedArrivalF1 =
-      statusF1?.actualArrival ??
-      statusF1?.estimatedArrival ??
-      trip.scheduled_arrival_f1;
-
-    const estimatedDepartureF2 =
-      statusF2?.actualDeparture ??
-      statusF2?.estimatedDeparture ??
-      trip.scheduled_departure_f2;
+    statusF1?.actualArrival ??
+    statusF1?.estimatedArrival ??
+    trip.estimated_arrival_f1 ??
+    trip.scheduled_arrival_f1;
+  
+  const estimatedDepartureF2 =
+    statusF2?.actualDeparture ??
+    statusF2?.estimatedDeparture ??
+    trip.estimated_departure_f2 ??
+    trip.scheduled_departure_f2;
 
     await supabase
       .from("trips")
@@ -146,14 +146,14 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       })
       .eq("id", trip.id);
 
-    const options = await generateRecoveryPlan(
-      trip.connection_airport,
-      trip.destination_airport,
-      estimatedArrivalF1,
-      trip.flight_2_number
-    );
 
-    if (newState === "likely_missed") {
+    if (previousState !== "likely_missed" && newState === "likely_missed") {
+      const options = await generateRecoveryPlan(
+        trip.connection_airport,
+        trip.destination_airport,
+        estimatedArrivalF1,
+        trip.flight_2_number
+      );
       await supabase.from("landing_plans").insert({
         trip_id: trip.id,
         created_at: new Date().toISOString(),
@@ -162,7 +162,13 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       } satisfies Partial<LandingPlanRow>);
     }
 
-    if (newState === "impossible") {
+    if (previousState !== "impossible" && newState === "impossible") {
+      const options = await generateRecoveryPlan(
+        trip.connection_airport,
+        trip.destination_airport,
+        estimatedArrivalF1,
+        trip.flight_2_number
+      );
       await supabase.from("landing_plans").insert({
         trip_id: trip.id,
         created_at: new Date().toISOString(),
