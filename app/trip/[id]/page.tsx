@@ -61,8 +61,20 @@ export default async function TripMonitorPage({ params }: { params: { id: string
         <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
           <p className="text-xs uppercase tracking-wide text-zinc-400">
             Connection Status
-            
+
           </p>
+
+
+          <div className="mt-2 space-y-1">
+            <p className={`text-lg font-semibold ${risk.color}`}>
+              {risk.label}
+            </p>
+
+            <ConnectionCountdown
+              departure={trip.scheduled_departure_f2}
+              arrival={trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1}
+            />
+          </div>
 
           <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
 
@@ -106,20 +118,6 @@ export default async function TripMonitorPage({ params }: { params: { id: string
 
           </div>
 
-          <p className={`mt-1 text-lg font-semibold ${risk.color}`}>
-            {risk.label}
-          </p>
-
-          <div className="mt-2 space-y-1">
-            <p className={`text-lg font-semibold ${risk.color}`}>
-              {risk.label}
-            </p>
-
-            <ConnectionCountdown
-              departure={trip.scheduled_departure_f2}
-              arrival={trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1}
-            />
-          </div>
         </div>
 
         <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
