@@ -76,7 +76,7 @@ export default async function TripMonitorPage({ params }: { params: { id: string
             />
           </div>
 
-          <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+          <div className="mt-3 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
 
             <p className="text-sm text-zinc-400">
               {trip.origin_airport} → {trip.connection_airport} → {trip.destination_airport}
