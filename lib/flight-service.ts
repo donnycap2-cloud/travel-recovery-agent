@@ -5,20 +5,19 @@ function getApiKey() {
   return key && key.length > 0 ? key : null;
 }
 
-async function safeFetch<T>(path: string, params: Record<string, string>): Promise<T | null> {
+async function safeFetch<T>(
+  path: string,
+  params: Record<string, string>
+): Promise<T | null> {
   const apiKey = getApiKey();
-  if (!apiKey) {
-    return null;
-  }
+  if (!apiKey) return null;
 
   const search = new URLSearchParams({ api_key: apiKey, ...params });
   const url = `${AIRLABS_BASE_URL}${path}?${search.toString()}`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) {
-      return null;
-    }
+    if (!res.ok) return null;
 
     const json = (await res.json()) as { response?: unknown };
     return (json.response as T | undefined) ?? null;
@@ -30,6 +29,12 @@ async function safeFetch<T>(path: string, params: Record<string, string>): Promi
 
 function normalizeFlightNumber(f: string | null | undefined) {
   return f?.replace(/\s+/g, "").toUpperCase() ?? "";
+}
+
+// 🔥 CRITICAL: normalize all times to ISO UTC
+function toISO(time: string | null): string | null {
+  if (!time) return null;
+  return new Date(time).toISOString();
 }
 
 export type ResolvedFlightInstance = {
@@ -46,14 +51,16 @@ export async function resolveFlightInstance(
   date?: string
 ): Promise<ResolvedFlightInstance | null> {
 
-  // --- Attempt 1: direct flight lookup
+  const normalizedInput = normalizeFlightNumber(flightNumber);
+
+  // --- Attempt 1: direct lookup
   const response = await safeFetch<
     Array<{
-      flight_iata?: string
-      dep_iata?: string
-      arr_iata?: string
-      dep_time?: string
-      arr_time?: string
+      flight_iata?: string;
+      dep_iata?: string;
+      arr_iata?: string;
+      dep_time?: string;
+      arr_time?: string;
     }>
   >("/schedules", {
     flight_iata: flightNumber,
@@ -62,72 +69,76 @@ export async function resolveFlightInstance(
 
   if (response && response.length > 0) {
 
-  // STEP 1: filter by correct origin
-  let candidates = response.filter(
-    (f) => f.dep_iata === originAirport && f.flight_iata === flightNumber
-  );
+    let candidates = response.filter(
+      (f) =>
+        f.dep_iata === originAirport &&
+        normalizeFlightNumber(f.flight_iata) === normalizedInput
+    );
 
-  // fallback if nothing matches (optional but safe)
-  if (candidates.length === 0) {
-    candidates = response;
-  }
+    // fallback if no strict match
+    if (candidates.length === 0) {
+      candidates = response;
+    }
 
-  // STEP 2: pick best by date (if provided)
-  let flight = candidates[0];
+    // remove invalid times
+    candidates = candidates.filter(f => f.dep_time);
 
-  if (date) {
-    const target = new Date(date).getTime();
+    if (candidates.length === 0) return null;
 
-    flight = candidates.reduce((closest, current) => {
-      const closestTime = new Date(closest.dep_time ?? "").getTime();
-      const currentTime = new Date(current.dep_time ?? "").getTime();
+    // sort by departure time
+    candidates.sort(
+      (a, b) =>
+        new Date(a.dep_time!).getTime() -
+        new Date(b.dep_time!).getTime()
+    );
 
-      if (!closest.dep_time) return current;
-      if (!current.dep_time) return closest;
+    let flight = candidates[0];
 
-      const closestDiff = Math.abs(closestTime - target);
-      const currentDiff = Math.abs(currentTime - target);
+    // refine by closest date if provided
+    if (date) {
+      const target = new Date(date).getTime();
 
-      return currentDiff < closestDiff ? current : closest;
-    });
-  }
+      flight = candidates.reduce((closest, current) => {
+        const closestTime = new Date(closest.dep_time!).getTime();
+        const currentTime = new Date(current.dep_time!).getTime();
+
+        const closestDiff = Math.abs(closestTime - target);
+        const currentDiff = Math.abs(currentTime - target);
+
+        return currentDiff < closestDiff ? current : closest;
+      });
+    }
 
     return {
       flightId: flight.flight_iata ?? flightNumber,
       origin: flight.dep_iata ?? originAirport,
       destination: flight.arr_iata ?? "",
-      scheduledDeparture: flight.dep_time ?? null,
-      scheduledArrival: flight.arr_time ?? null
+      scheduledDeparture: toISO(flight.dep_time ?? null),
+      scheduledArrival: toISO(flight.arr_time ?? null)
     };
   }
 
   console.log("Direct lookup failed, trying airport departures");
 
-  // --- Attempt 2: search airport departures
-  if (!originAirport) {
-    return null;
-  }
+  // --- Attempt 2: airport departures
+  if (!originAirport) return null;
 
   const departures = await getAirportDepartures(originAirport);
-
-  if (!departures) {
-    return null;
-  }
+  if (!departures) return null;
 
   const match = departures.find(
-    f => normalizeFlightNumber(f.flightNumber) === normalizeFlightNumber(flightNumber)
+    (f) =>
+      normalizeFlightNumber(f.flightNumber) === normalizedInput
   );
 
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
 
   return {
     flightId: flightNumber,
     origin: originAirport,
     destination: match.destination ?? "",
-    scheduledDeparture: match.departureTime ?? null,
-    scheduledArrival: match.arrivalTime ?? null
+    scheduledDeparture: toISO(match.departureTime),
+    scheduledArrival: toISO(match.arrivalTime)
   };
 }
 
@@ -144,39 +155,36 @@ export type FlightStatus = {
   actualArrival?: string | null;
 };
 
-export async function getFlightStatus(flightIata: string): Promise<FlightStatus | null> {
+export async function getFlightStatus(
+  flightIata: string
+): Promise<FlightStatus | null> {
   const response = await safeFetch<
-  Array<{
-    flight_number?: string;
+    Array<{
+      flight_number?: string;
+      dep_time?: string;
+      arr_time?: string;
+      dep_estimated?: string;
+      arr_estimated?: string;
+      dep_actual?: string;
+      arr_actual?: string;
+      status?: string;
+    }>
+  >("/flights", {
+    flight_iata: flightIata
+  });
 
-    dep_time?: string;
-    arr_time?: string;
-
-    dep_estimated?: string;
-    arr_estimated?: string;
-
-    dep_actual?: string;
-    arr_actual?: string;
-
-    status?: string;
-  }>
->("/flights", {
-  flight_iata: flightIata
-});
-
-  if (!response || response.length === 0) {
-    return null;
-  }
+  if (!response || response.length === 0) return null;
 
   const now = Date.now();
 
-  const flight = response.reduce((closest, current) => {
-    const currentTime = new Date(current.dep_time ?? "").getTime();
-    const closestTime = new Date(closest.dep_time ?? "").getTime();
-  
-    if (!current.dep_time) return closest;
-    if (!closest.dep_time) return current;
-  
+  const validFlights = response.filter(f => f.dep_time);
+
+  if (validFlights.length === 0) return null;
+
+  const flight = validFlights.reduce((closest, current) => {
+    const currentTime = new Date(current.dep_time!).getTime();
+    const closestTime = new Date(closest.dep_time!).getTime();
+
     return Math.abs(currentTime - now) < Math.abs(closestTime - now)
       ? current
       : closest;
@@ -184,15 +192,15 @@ export async function getFlightStatus(flightIata: string): Promise<FlightStatus 
 
   return {
     flightNumber: flight.flight_number ?? flightIata,
-  
-    scheduledDeparture: flight.dep_time ?? null,
-    scheduledArrival: flight.arr_time ?? null,
-  
-    estimatedDeparture: flight.dep_estimated ?? null,
-    estimatedArrival: flight.arr_estimated ?? null,
-  
-    actualDeparture: flight.dep_actual ?? null,
-    actualArrival: flight.arr_actual ?? null
+
+    scheduledDeparture: toISO(flight.dep_time ?? null),
+    scheduledArrival: toISO(flight.arr_time ?? null),
+
+    estimatedDeparture: toISO(flight.dep_estimated ?? null),
+    estimatedArrival: toISO(flight.arr_estimated ?? null),
+
+    actualDeparture: toISO(flight.dep_actual ?? null),
+    actualArrival: toISO(flight.arr_actual ?? null)
   };
 }
 
@@ -223,5 +231,3 @@ export async function getAirportDepartures(
     destination: flight.arr_iata ?? null
   }));
 }
-
-
