@@ -129,9 +129,6 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       })
       .eq("id", trip.id);
 
-    if (previousState === newState) {
-      continue;
-    }
 
     stateChanges++;
 
