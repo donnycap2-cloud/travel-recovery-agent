@@ -22,7 +22,8 @@ let lastRun = 0;
 
 export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
-
+  const now = Date.now();
+  
   // ✅ Rate limiter
   if (now - lastRun < 60000) {
     console.log("Skipping — ran too recently");
@@ -39,7 +40,6 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
   });
 
 
-  const now = Date.now();
 
   const windowStart = new Date(now - 2 * 60 * 60 * 1000).toISOString();
   const windowEnd = new Date(now + 12 * 60 * 60 * 1000).toISOString();
