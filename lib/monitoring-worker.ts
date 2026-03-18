@@ -44,6 +44,14 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     .from("trips")
     .select("*")
     .eq("status", "active")
+    .gte(
+      "scheduled_departure_f2",
+      new Date(now - 2 * 60 * 60 * 1000).toISOString() // 2h ago
+    )
+    .lte(
+      "scheduled_departure_f2",
+      new Date(now + 4 * 60 * 60 * 1000).toISOString() // 4h ahead
+    );
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
