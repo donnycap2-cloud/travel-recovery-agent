@@ -34,7 +34,14 @@ function normalizeFlightNumber(f: string | null | undefined) {
 // 🔥 CRITICAL: normalize all times to ISO UTC
 function toISO(time: string | null): string | null {
   if (!time) return null;
-  return new Date(time).toISOString();
+
+  // 🔥 If already ISO → keep it
+  if (time.includes("T")) {
+    return new Date(time).toISOString();
+  }
+
+  // 🔥 If no timezone → force UTC
+  return new Date(time + "Z").toISOString();
 }
 
 export type ResolvedFlightInstance = {
