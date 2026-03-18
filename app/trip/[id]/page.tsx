@@ -71,8 +71,12 @@ export default async function TripMonitorPage({ params }: { params: { id: string
             </p>
 
             <ConnectionCountdown
-              departure={trip.scheduled_departure_f2}
-              arrival={trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1}
+              departure={
+                trip.estimated_departure_f2 ?? trip.scheduled_departure_f2
+              }
+              arrival={
+                trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1
+              }
             />
           </div>
 
@@ -102,17 +106,19 @@ export default async function TripMonitorPage({ params }: { params: { id: string
               </span>
             </p>
 
-              <p>
-                Flight 2 departure:
-                <span className="font-medium text-zinc-100 ml-1">
-                  {trip.scheduled_departure_f2
-                    ? new Date(trip.scheduled_departure_f2).toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit"
-                      })
-                    : "—"}
-                </span>
-              </p>
+            <p>
+              Flight 2 departure:
+              <span className="font-medium text-zinc-100 ml-1">
+                {trip.estimated_departure_f2 || trip.scheduled_departure_f2
+                  ? new Date(
+                      trip.estimated_departure_f2 ?? trip.scheduled_departure_f2
+                    ).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit"
+                    })
+                  : "—"}
+              </span>
+            </p>
 
             </div>
 
