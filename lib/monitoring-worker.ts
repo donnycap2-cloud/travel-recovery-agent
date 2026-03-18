@@ -121,14 +121,14 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     const previousState = trip.monitoring_state ?? "safe";
     const newState = risk.state;
 
-    // Always update connection time
+    // Always update BOTH
     await supabase
       .from("trips")
       .update({
+        monitoring_state: newState,
         connection_time_remaining: risk.connectionTimeRemaining
       })
       .eq("id", trip.id);
-
 
     stateChanges++;
 
