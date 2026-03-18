@@ -157,14 +157,6 @@ const MAJOR_HUBS = [
         // ❌ remove past flights
         if (departureTime < now) return false;
       
-        const arrivalTimeAtConnection = arrival;
-
-        if (arrivalTimeAtConnection) {
-          const bufferMinutes =
-            (departureTime.getTime() - arrivalTimeAtConnection.getTime()) / 60000;
-        
-          if (bufferMinutes < 60) return false;
-        }
 
         // ❌ enforce connection buffer
         if (earliestDeparture && departureTime < earliestDeparture) return false;
@@ -235,13 +227,31 @@ const MAJOR_HUBS = [
     
     const ranked = flights
     .sort((a, b) => {
+
+      const aDeparture = new Date(a.departure).getTime();
+      const bDeparture = new Date(b.departure).getTime();
+    
+      const aArrival = new Date(a.arrival).getTime();
+      const bArrival = new Date(b.arrival).getTime();
+    
       const aSameAirline = a.flightNumber?.startsWith(originalAirline);
       const bSameAirline = b.flightNumber?.startsWith(originalAirline);
-  
+    
+      // 1. Prefer flights leaving soon (urgency)
+      if (Math.abs(aDeparture - now.getTime()) !== Math.abs(bDeparture - now.getTime())) {
+        return Math.abs(aDeparture - now.getTime()) - Math.abs(bDeparture - now.getTime());
+      }
+    
+      // 2. Then earliest arrival
+      if (aArrival !== bArrival) {
+        return aArrival - bArrival;
+      }
+    
+      // 3. Then same airline
       if (aSameAirline && !bSameAirline) return -1;
       if (!aSameAirline && bSameAirline) return 1;
-  
-      return new Date(a.arrival).getTime() - new Date(b.arrival).getTime();
+    
+      return 0;
     })
     .slice(0, 3);
     

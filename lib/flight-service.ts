@@ -22,9 +22,14 @@ async function safeFetch<T>(path: string, params: Record<string, string>): Promi
 
     const json = (await res.json()) as { response?: unknown };
     return (json.response as T | undefined) ?? null;
-  } catch {
+  } catch (error) {
+    console.error("API fetch failed:", path, params, error);
     return null;
   }
+}
+
+function normalizeFlightNumber(f: string | null | undefined) {
+  return f?.replace(/\s+/g, "").toUpperCase() ?? "";
 }
 
 export type ResolvedFlightInstance = {
@@ -59,7 +64,7 @@ export async function resolveFlightInstance(
 
   // STEP 1: filter by correct origin
   let candidates = response.filter(
-    (f) => f.dep_iata === originAirport
+    (f) => f.dep_iata === originAirport && f.flight_iata === flightNumber
   );
 
   // fallback if nothing matches (optional but safe)
@@ -110,7 +115,7 @@ export async function resolveFlightInstance(
   }
 
   const match = departures.find(
-    f => f.flightNumber?.toUpperCase() === flightNumber.toUpperCase()
+    f => normalizeFlightNumber(f.flightNumber) === normalizeFlightNumber(flightNumber)
   );
 
   if (!match) {
@@ -163,7 +168,19 @@ export async function getFlightStatus(flightIata: string): Promise<FlightStatus 
     return null;
   }
 
-  const flight = response[0];
+  const now = Date.now();
+
+  const flight = response.reduce((closest, current) => {
+    const currentTime = new Date(current.dep_time ?? "").getTime();
+    const closestTime = new Date(closest.dep_time ?? "").getTime();
+  
+    if (!current.dep_time) return closest;
+    if (!closest.dep_time) return current;
+  
+    return Math.abs(currentTime - now) < Math.abs(closestTime - now)
+      ? current
+      : closest;
+  });
 
   return {
     flightNumber: flight.flight_number ?? flightIata,
@@ -190,30 +207,21 @@ export type AirportDeparture = {
 export async function getAirportDepartures(
   airportCode: string
 ): Promise<AirportDeparture[] | null> {
-  try {
-    const apiKey = process.env.AIRLABS_API_KEY;
 
-    const url = `https://airlabs.co/api/v9/schedules?dep_iata=${airportCode}&api_key=${apiKey}`;
+  const response = await safeFetch<any[]>(
+    "/schedules",
+    { dep_iata: airportCode }
+  );
 
-    const res = await fetch(url);
-    const data = await res.json();
+  if (!response) return null;
 
-    if (!data?.response) {
-      console.error("AirLabs returned no response field", data);
-      return null;
-    }
-
-    return data.response.map((flight: any) => ({
-      airline: flight.airline_iata,
-      flightNumber: flight.flight_number,
-      departureTime: flight.dep_time,
-      arrivalTime: flight.arr_time,
-      destination: flight.arr_iata
-    }));
-  } catch (error) {
-    console.error("Airport departures fetch failed:", error);
-    return null;
-  }
+  return response.map((flight: any) => ({
+    airline: flight.airline_iata ?? null,
+    flightNumber: flight.flight_iata ?? null,
+    departureTime: flight.dep_time ?? null,
+    arrivalTime: flight.arr_time ?? null,
+    destination: flight.arr_iata ?? null
+  }));
 }
 
 
