@@ -62,7 +62,7 @@ function getDelayImpact(trip: any) {
 
   if (diffMinutes <= 0) return null;
 
-  return `You will miss your connection by ${diffMinutes} minutes.`;
+  return `You will miss your connection by ${diffMinutes} minutes. You need to rebook.`;
 }
 
 export default async function PlanPage({
@@ -90,6 +90,14 @@ export default async function PlanPage({
 
   const best = plan?.options?.[0];
   const alternatives = plan?.options?.slice(1) ?? [];
+
+  const bufferMinutes =
+  trip?.estimated_arrival_f1 && best?.departure
+    ? Math.round(
+        (new Date(best.departure).getTime() -
+          new Date(trip.estimated_arrival_f1).getTime()) / 60000
+      )
+    : null;
 
   return (
     <main>
@@ -124,12 +132,18 @@ export default async function PlanPage({
                 </p>
 
                 <p className="text-lg font-semibold text-green-400">
-                  Take {best.airline} {best.flightNumber}
+                  Best option: {best.airline} {best.flightNumber}
                 </p>
 
                 <p className="text-sm text-zinc-300">
                   Departs {formatTime(best.departure)} • Arrives {formatTime(best.arrival)}
                 </p>
+
+                {bufferMinutes && (
+                <p className="text-xs text-zinc-400">
+                  {bufferMinutes} min connection buffer
+                </p>
+              )}
 
                 <p className="text-sm text-zinc-400">
                   {best.origin || trip.connection_airport} → {best.destination || trip.destination_airport} •{" "}
@@ -148,7 +162,7 @@ export default async function PlanPage({
                 </p>
 
                 <p className="mt-1 text-sm text-zinc-200">
-                  {getRecoveryReason(best, 0, trip)}. This option gets you to your destination the earliest after your missed connection.
+                  This is your best option because {getRecoveryReason(best, 0, trip).toLowerCase()}
                 </p>
 
               </div>
@@ -163,9 +177,9 @@ export default async function PlanPage({
                 </p>
 
                 <ul className="mt-2 space-y-2 text-sm text-zinc-200">
-                  <li>• Open your airline app</li>
-                  <li>• Search for {best.airline} {best.flightNumber}</li>
-                  <li>• Rebook immediately before seats fill</li>
+                  <li>• Open your airline app or go to the gate agent</li>
+                  <li>• Ask to be moved to {best.airline} {best.flightNumber}</li>
+                  <li>• Do this now — seats may fill quickly</li>
                 </ul>
 
               </div>
