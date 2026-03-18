@@ -59,7 +59,7 @@ export default function ConnectionCountdown({
 
     return () => clearInterval(interval)
 
-  }, [departure])
+  }, [departure, arrival])
 
   if (!remaining) return null
 
@@ -84,7 +84,7 @@ export default function ConnectionCountdown({
     }`}
   >
     {margin < 0
-    ? `Missed by ${formatMinutes(margin)}`
+    ? `Connection missed by ${formatMinutes(margin)}`
     : `${formatMinutes(margin)} connection`}
   </p>
 </div>
