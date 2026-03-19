@@ -1,3 +1,4 @@
+import { toUTCFromAirport } from "@/lib/timezones";
 const AIRLABS_BASE_URL = "https://airlabs.co/api/v9";
 
 function getApiKey() {
@@ -120,8 +121,16 @@ export async function resolveFlightInstance(
       flightId: flight.flight_iata ?? flightNumber,
       origin: flight.dep_iata ?? originAirport,
       destination: flight.arr_iata ?? "",
-      scheduledDeparture: toISO(flight.dep_time ?? null),
-      scheduledArrival: toISO(flight.arr_time ?? null)
+
+      scheduledDeparture: toUTCFromAirport(
+        flight.dep_time ?? null,
+        flight.dep_iata ?? originAirport
+      ),
+      
+      scheduledArrival: toUTCFromAirport(
+        flight.arr_time ?? null,
+        flight.arr_iata ?? ""
+      ),
     };
   }
 
