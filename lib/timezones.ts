@@ -1,8 +1,6 @@
 import { DateTime } from "luxon";
 
-// Expand this over time
 const AIRPORT_TIMEZONES: Record<string, string> = {
-  // US
   LAX: "America/Los_Angeles",
   SFO: "America/Los_Angeles",
   SEA: "America/Los_Angeles",
@@ -21,43 +19,35 @@ const AIRPORT_TIMEZONES: Record<string, string> = {
   ATL: "America/New_York",
   BOS: "America/New_York",
 
-  // Caribbean (you)
   STX: "America/St_Thomas",
   STT: "America/St_Thomas",
   SJU: "America/Puerto_Rico",
 
-  // Europe (starter)
   LHR: "Europe/London",
   CDG: "Europe/Paris",
 };
 
 export function parseAirportTime(
-    time: string | null,
-    airport: string
-  ): number | null {
-    if (!time) return null;
-  
-    // ✅ If already has timezone → TRUST IT
-    if (time.includes("Z") || time.includes("+")) {
-      return new Date(time).getTime();
-    }
-  
-    // ❌ Otherwise → treat as airport local
-    const tz = AIRPORT_TIMEZONES[airport];
-    if (!tz) return new Date(time).getTime();
-  
-    const date = new Date(
-      new Intl.DateTimeFormat("en-US", {
-        timeZone: tz,
-        hour12: false,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      }).format(new Date(time))
-    );
-  
-    return date.getTime();
+  time: string | null,
+  airport: string
+): number | null {
+  if (!time) return null;
+
+  const tz = AIRPORT_TIMEZONES[airport];
+  if (!tz) {
+    return new Date(time).getTime();
   }
+
+  try {
+    // 🔥 strip ANY timezone info from API
+    const cleaned = time.replace(/Z|[+-]\d{2}:\d{2}$/, "");
+
+    const dt = DateTime.fromISO(cleaned, { zone: tz });
+
+    if (!dt.isValid) return null;
+
+    return dt.toUTC().toMillis();
+  } catch {
+    return null;
+  }
+}
