@@ -6,6 +6,7 @@ import { calculateConnectionRisk } from "@/lib/risk-engine";
 import type { TripRow, RiskEventRow, LandingPlanRow } from "@/types/database";
 import { generateRecoveryPlan } from "@/lib/recovery-engine";
 import { getMCT } from "@/lib/mct";
+import { parseAirportTime } from "./timezones";
 
 type MonitoringSummary = {
   tripsProcessed: number;
@@ -104,8 +105,15 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       })
       .eq("id", trip.id);
 
-    const arrivalF1Seconds = toEpochSeconds(estimatedArrivalF1);
-    const departureF2Seconds = toEpochSeconds(estimatedDepartureF2);
+      const arrivalF1Seconds = parseAirportTime(
+        estimatedArrivalF1,
+        trip.connection_airport
+      );
+      
+      const departureF2Seconds = parseAirportTime(
+        estimatedDepartureF2,
+        trip.connection_airport
+      );
 
     if (arrivalF1Seconds == null || departureF2Seconds == null) {
       continue;
