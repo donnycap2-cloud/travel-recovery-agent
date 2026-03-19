@@ -29,24 +29,27 @@ const AIRPORT_TIMEZONES: Record<string, string> = {
 };
 
 export function toUTCFromAirport(
-  localTime: string | null,
-  airport: string
-): string | null {
-  if (!localTime) return null;
-
-  const zone = AIRPORT_TIMEZONES[airport] ?? "UTC";
-
-  let dt = DateTime.fromISO(localTime, { zone });
-
-  // 🔥 fallback for "YYYY-MM-DD HH:mm"
-  if (!dt.isValid) {
-    dt = DateTime.fromFormat(localTime, "yyyy-MM-dd HH:mm", { zone });
+    localTime: string | null,
+    airport: string
+  ): string | null {
+    if (!localTime) return null;
+  
+    const zone = AIRPORT_TIMEZONES[airport] ?? "UTC";
+  
+    let dt = DateTime.fromISO(localTime, { zone });
+  
+    if (!dt.isValid) {
+      dt = DateTime.fromFormat(localTime, "yyyy-MM-dd HH:mm", {
+        zone,
+        setZone: true // 🔥 IMPORTANT
+      });
+    }
+  
+    if (!dt.isValid) {
+      console.log("❌ INVALID TIME:", localTime, airport);
+      return null;
+    }
+  
+    // 🔥 KEY FIX: ensure zone is applied BEFORE UTC conversion
+    return dt.setZone(zone, { keepLocalTime: true }).toUTC().toISO();
   }
-
-  if (!dt.isValid) {
-    console.log("❌ INVALID TIME:", localTime, airport);
-    return null;
-  }
-
-  return dt.toUTC().toISO();
-}
