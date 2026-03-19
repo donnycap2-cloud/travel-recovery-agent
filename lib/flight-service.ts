@@ -1,3 +1,5 @@
+import { parseAirportTime } from "@/lib/timezones";
+
 const AIRLABS_BASE_URL = "https://airlabs.co/api/v9";
 
 function getApiKey() {
@@ -116,12 +118,22 @@ export async function resolveFlightInstance(
       });
     }
 
+    const depMs = parseAirportTime(
+      flight.dep_time ?? null,
+      flight.dep_iata ?? originAirport
+    );
+    
+    const arrMs = parseAirportTime(
+      flight.arr_time ?? null,
+      flight.arr_iata ?? ""
+    );
+    
     return {
       flightId: flight.flight_iata ?? flightNumber,
       origin: flight.dep_iata ?? originAirport,
       destination: flight.arr_iata ?? "",
-      scheduledDeparture: toISO(flight.dep_time ?? null),
-      scheduledArrival: toISO(flight.arr_time ?? null)
+      scheduledDeparture: depMs ? new Date(depMs).toISOString() : null,
+      scheduledArrival: arrMs ? new Date(arrMs).toISOString() : null
     };
   }
 
@@ -140,12 +152,22 @@ export async function resolveFlightInstance(
 
   if (!match) return null;
 
+  const depMs = parseAirportTime(
+    match.departureTime,
+    originAirport
+  );
+  
+  const arrMs = parseAirportTime(
+    match.arrivalTime,
+    match.destination ?? ""
+  );
+  
   return {
     flightId: flightNumber,
     origin: originAirport,
     destination: match.destination ?? "",
-    scheduledDeparture: toISO(match.departureTime),
-    scheduledArrival: toISO(match.arrivalTime)
+    scheduledDeparture: depMs ? new Date(depMs).toISOString() : null,
+    scheduledArrival: arrMs ? new Date(arrMs).toISOString() : null
   };
 }
 
