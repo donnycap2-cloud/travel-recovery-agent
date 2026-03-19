@@ -97,7 +97,10 @@ export async function generateRecoveryPlan(
 
       if (depMs < now) return null;
 
-      if (earliestDeparture && depMs < earliestDeparture) return null;
+      if (!arrivalMs) return null;
+      
+      // allow recovery options even if MCT already violated
+      if (depMs < arrivalMs) return null;
 
       return {
         airline: flight.airline_iata ?? "Airline",
