@@ -19,18 +19,24 @@ export type MonitoringState =
     if (connectionTimeRemaining < 0) {
       return { state: "impossible", connectionTimeRemaining };
     }
-  
-    // 🟠 Below minimum connection time
+
+    // 🔴 Way below MCT → impossible
+    if (connectionTimeRemaining < mctMinutes - 20) {
+      return { state: "impossible", connectionTimeRemaining };
+    }
+
+    // 🟠 Slightly below MCT → likely missed
     if (connectionTimeRemaining < mctMinutes) {
       return { state: "likely_missed", connectionTimeRemaining };
     }
-  
-    // 🟡 Barely makes MCT (risky buffer)
+
+    // 🟡 Barely above MCT → tight
     if (connectionTimeRemaining < mctMinutes + 20) {
       return { state: "tight", connectionTimeRemaining };
     }
-  
-    // 🟢 Comfortable buffer
+
+    // 🟢 Comfortable
     return { state: "safe", connectionTimeRemaining };
+
   }
 

@@ -134,6 +134,15 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     const previousState = trip.monitoring_state ?? "safe";
     const newState = risk.state;
 
+    console.log("RISK INPUT", {
+      trip: trip.id,
+      arrival: finalArrivalF1,
+      departure: finalDepartureF2,
+      arrivalMs,
+      departureMs,
+      connectionMinutes: Math.round((departureMs - arrivalMs) / 60000)
+    });
+
     // ✅ SINGLE CLEAN UPDATE
     await supabase
       .from("trips")
