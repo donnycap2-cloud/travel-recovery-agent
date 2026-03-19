@@ -37,13 +37,15 @@ export function parseAirportTime(
   ): number | null {
     if (!time) return null;
   
-    const tz = AIRPORT_TIMEZONES[airport];
-  
-    if (!tz) {
-      return new Date(time).getTime(); // fallback
+    // ✅ If already has timezone → TRUST IT
+    if (time.includes("Z") || time.includes("+")) {
+      return new Date(time).getTime();
     }
   
-    // 🔥 Force correct timezone interpretation
+    // ❌ Otherwise → treat as airport local
+    const tz = AIRPORT_TIMEZONES[airport];
+    if (!tz) return new Date(time).getTime();
+  
     const date = new Date(
       new Intl.DateTimeFormat("en-US", {
         timeZone: tz,
