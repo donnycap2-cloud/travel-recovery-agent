@@ -34,10 +34,14 @@ function normalizeFlightNumber(f: string | null | undefined) {
 function toISO(time: string | null): string | null {
   if (!time) return null;
 
-  const ms = new Date(time).getTime();
-  if (Number.isNaN(ms)) return null;
+  // ❌ DO NOT trust timezone
+  // Treat as LOCAL time
 
-  return new Date(ms).toISOString();
+  const local = new Date(time.replace("Z", ""));
+
+  if (Number.isNaN(local.getTime())) return null;
+
+  return local.toISOString();
 }
 
 export type ResolvedFlightInstance = {
