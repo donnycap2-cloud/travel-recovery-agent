@@ -1,3 +1,5 @@
+import { toUTCFromAirport } from "@/lib/timezones";
+
 const MAJOR_HUBS = [
     "ATL",
     "DFW",
@@ -130,8 +132,15 @@ const MAJOR_HUBS = [
     let flights: RecoveryOption[] = directSchedules
       .map((flight: any) => {
   
-        const dep = flight.dep_time
-        const arr = flight.arr_time
+        const dep = toUTCFromAirport(
+          flight.dep_time,
+          flight.dep_iata ?? connectionAirport
+        )
+        
+        const arr = toUTCFromAirport(
+          flight.arr_time,
+          flight.arr_iata ?? destinationAirport
+        )
   
         if (!dep || !arr) return null
   
@@ -183,8 +192,13 @@ const MAJOR_HUBS = [
               continue
             }
   
-            const arrivalHub = new Date(f1.arr_time)
-            const departHub = new Date(f2.dep_time)
+            const arrivalHub = new Date(
+              toUTCFromAirport(f1.arr_time, f1.arr_iata ?? hub)!
+            )
+            
+            const departHub = new Date(
+              toUTCFromAirport(f2.dep_time, f2.dep_iata ?? hub)!
+            )
   
             const layoverMinutes =
               (departHub.getTime() - arrivalHub.getTime()) / 60000
@@ -275,8 +289,8 @@ const schedules = await getSchedules(
     .map((f: any) => ({
       airline: f.airline_iata ?? "Airline",
       flightNumber: f.flight_iata,
-      departure: f.dep_time,
-      arrival: f.arr_time,
+      departure: toUTCFromAirport(f.dep_time, connectionAirport),
+      arrival: toUTCFromAirport(f.arr_time, destinationAirport),
       origin: connectionAirport,
       destination: destinationAirport,
       duration: calculateDuration(f.dep_time, f.arr_time)
