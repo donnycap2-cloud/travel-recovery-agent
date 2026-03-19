@@ -13,7 +13,7 @@ export type MonitoringState =
     connectionTimeRemaining: number;
   } {
     const diffSeconds = scheduledDepartureF2 - estimatedArrivalF1;
-    const connectionTimeRemaining = Math.round(diffSeconds / 60);
+    const connectionTimeRemaining = Math.round(diffSeconds / 60000);
   
     // 🔴 Already missed
     if (connectionTimeRemaining < 0) {
