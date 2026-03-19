@@ -51,6 +51,13 @@ export default function ConnectionCountdown({
       const departureTime = new Date(departure).getTime();
       const arrivalTime = new Date(arrival).getTime();
     
+      console.log("COUNTDOWN CHECK", {
+        departure,
+        departureTime,
+        now,
+        diffMinutes: Math.floor((departureTime - now) / 60000)
+      });
+
       const timeToDeparture = departureTime - now;
       const connectionMargin = departureTime - arrivalTime;
     
