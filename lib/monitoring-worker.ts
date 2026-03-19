@@ -66,9 +66,10 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
   for (const trip of trips as TripRow[]) {
 
-    await supabase.from("debug_logs").insert({
-      message: `PROCESSING TRIP: ${trip.id}`,
-      created_at: new Date().toISOString()
+    console.log("TRIP DEBUG", {
+      id: trip.id,
+      dep2: trip.scheduled_departure_f2,
+      arr1: trip.scheduled_arrival_f1
     });
 
     if (!trip.flight_1_number || !trip.flight_2_number) {
