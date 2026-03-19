@@ -122,8 +122,8 @@ export async function resolveFlightInstance(
       flightId: flight.flight_iata ?? flightNumber,
       origin: flight.dep_iata ?? originAirport,
       destination: flight.arr_iata ?? "",
-      scheduledDeparture: toISO(flight.dep_time ?? null),
-      scheduledArrival: toISO(flight.arr_time ?? null)
+      scheduledDeparture: flight.dep_time ?? null,
+      scheduledArrival: flight.arr_time ?? null
     };
   }
 
