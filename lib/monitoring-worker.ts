@@ -6,7 +6,6 @@ import { calculateConnectionRisk } from "@/lib/risk-engine";
 import type { TripRow, RiskEventRow, LandingPlanRow } from "@/types/database";
 import { generateRecoveryPlan } from "@/lib/recovery-engine";
 import { getMCT } from "@/lib/mct";
-import { parseAirportTime } from "./timezones";
 
 type MonitoringSummary = {
   tripsProcessed: number;
@@ -58,7 +57,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
     tripsProcessed++;
 
-    // ✅ Fetch flight status with correct airports
+    // ✅ Fetch flight status
     const [statusF1, statusF2] = await Promise.all([
       getFlightStatus(
         trip.flight_1_number,
@@ -92,18 +91,11 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       continue;
     }
 
-    // ✅ Parse AFTER fallback
-    const arrivalMs = parseAirportTime(
-      finalArrivalF1,
-      trip.connection_airport
-    );
+    // ✅ SAFE PARSING
+    const arrivalMs = new Date(finalArrivalF1).getTime();
+    const departureMs = new Date(finalDepartureF2).getTime();
 
-    const departureMs = parseAirportTime(
-      finalDepartureF2,
-      trip.connection_airport
-    );
-
-    if (!arrivalMs || !departureMs) {
+    if (Number.isNaN(arrivalMs) || Number.isNaN(departureMs)) {
       console.log("❌ PARSE FAILED", {
         trip: trip.id,
         finalArrivalF1,
@@ -131,7 +123,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     const previousState = trip.monitoring_state ?? "safe";
     const newState = risk.state;
 
-    // ✅ SINGLE CLEAN UPDATE (no double writes)
+    // ✅ SINGLE CLEAN UPDATE
     await supabase
       .from("trips")
       .update({

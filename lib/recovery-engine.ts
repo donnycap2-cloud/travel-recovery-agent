@@ -1,5 +1,3 @@
-import { parseAirportTime } from "@/lib/timezones";
-
 const MAJOR_HUBS = [
   "ATL", "DFW", "ORD", "DEN", "CLT", "IAH", "PHX", "LAS"
 ];
@@ -7,8 +5,8 @@ const MAJOR_HUBS = [
 type RecoveryOption = {
   flightNumber: string;
   airline: string;
-  departure: string; // ISO UTC
-  arrival: string;   // ISO UTC
+  departure: string; // ISO
+  arrival: string;   // ISO
   origin: string;
   destination: string;
   duration: string;
@@ -64,10 +62,8 @@ export async function generateRecoveryPlan(
 
   const now = Date.now();
 
-  // ✅ Normalize arrival
-  const arrivalMs = arrivalTime
-    ? parseAirportTime(arrivalTime, connectionAirport)
-    : null;
+  // ✅ SIMPLE TIME HANDLING (NO TIMEZONE LOGIC)
+  const arrivalMs = arrivalTime ? new Date(arrivalTime).getTime() : null;
 
   const MCT_MINUTES = getMCT(connectionAirport);
 
@@ -88,35 +84,25 @@ export async function generateRecoveryPlan(
   let flights: RecoveryOption[] = directSchedules
     .map((flight: any) => {
 
-      const depMs = parseAirportTime(
-        flight.dep_time,
-        flight.dep_iata ?? connectionAirport
-      );
+      const depMs = new Date(flight.dep_time).getTime();
+      const arrMs = new Date(flight.arr_time).getTime();
 
-      const arrMs = parseAirportTime(
-        flight.arr_time,
-        flight.arr_iata ?? destinationAirport
-      );
+      if (Number.isNaN(depMs) || Number.isNaN(arrMs)) return null;
 
-      if (!depMs || !arrMs) return null;
-
-      // ❌ remove past
+      // ❌ remove past flights
       if (depMs < now) return null;
 
       // ❌ enforce MCT buffer
       if (earliestDeparture && depMs < earliestDeparture) return null;
 
-      const depIso = new Date(depMs).toISOString();
-      const arrIso = new Date(arrMs).toISOString();
-
       return {
         airline: flight.airline_iata ?? "Airline",
         flightNumber: flight.flight_iata,
-        departure: depIso,
-        arrival: arrIso,
+        departure: flight.dep_time,
+        arrival: flight.arr_time,
         origin: flight.dep_iata ?? connectionAirport,
         destination: flight.arr_iata ?? destinationAirport,
-        duration: calculateDuration(depIso, arrIso)
+        duration: calculateDuration(flight.dep_time, flight.arr_time)
       };
     })
     .filter((f: RecoveryOption | null): f is RecoveryOption => f !== null);
@@ -137,33 +123,35 @@ export async function generateRecoveryPlan(
       for (const f1 of firstLegs.slice(0, 2)) {
         for (const f2 of secondLegs.slice(0, 2)) {
 
-          const f1DepMs = parseAirportTime(f1.dep_time, f1.dep_iata ?? connectionAirport);
-          const f1ArrMs = parseAirportTime(f1.arr_time, f1.arr_iata ?? hub);
-          const f2DepMs = parseAirportTime(f2.dep_time, f2.dep_iata ?? hub);
-          const f2ArrMs = parseAirportTime(f2.arr_time, f2.arr_iata ?? destinationAirport);
+          const f1DepMs = new Date(f1.dep_time).getTime();
+          const f1ArrMs = new Date(f1.arr_time).getTime();
+          const f2DepMs = new Date(f2.dep_time).getTime();
+          const f2ArrMs = new Date(f2.arr_time).getTime();
 
-          if (!f1DepMs || !f1ArrMs || !f2DepMs || !f2ArrMs) continue;
+          if (
+            Number.isNaN(f1DepMs) ||
+            Number.isNaN(f1ArrMs) ||
+            Number.isNaN(f2DepMs) ||
+            Number.isNaN(f2ArrMs)
+          ) continue;
 
           // ❌ remove past
           if (f1DepMs < now) continue;
 
-          // ❌ enforce connection timing
+          // ❌ enforce MCT buffer
           if (earliestDeparture && f1DepMs < earliestDeparture) continue;
 
           const layoverMinutes = (f2DepMs - f1ArrMs) / 60000;
           if (layoverMinutes < 60) continue;
 
-          const depIso = new Date(f1DepMs).toISOString();
-          const arrIso = new Date(f2ArrMs).toISOString();
-
           flights.push({
             airline: f1.airline_iata ?? "Airline",
             flightNumber: `${f1.flight_iata} → ${f2.flight_iata}`,
-            departure: depIso,
-            arrival: arrIso,
+            departure: f1.dep_time,
+            arrival: f2.arr_time,
             origin: connectionAirport,
             destination: destinationAirport,
-            duration: calculateDuration(depIso, arrIso)
+            duration: calculateDuration(f1.dep_time, f2.arr_time)
           });
         }
       }
@@ -219,7 +207,5 @@ export async function generateRecoveryPlan(
     })
     .slice(0, 3);
 
-  if (ranked.length > 0) return ranked;
-
-  return [];
+  return ranked.length > 0 ? ranked : [];
 }

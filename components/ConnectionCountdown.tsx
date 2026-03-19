@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { parseAirportTime } from "@/lib/timezones";
 
 function formatMinutes(minutes: number) {
   const abs = Math.abs(minutes);
@@ -36,13 +35,17 @@ export default function ConnectionCountdown({
       now: new Date().toISOString()
     });
 
-    if (!departure) return;
+    // ✅ REQUIRE BOTH VALUES
+    if (!departure || !arrival) {
+      console.log("❌ Missing countdown inputs");
+      return;
+    }
 
     const update = () => {
       const now = Date.now();
 
-      const departureTime = parseAirportTime(departure, airport);
-      const arrivalTime = parseAirportTime(arrival, airport);
+      const departureTime = new Date(departure).getTime();
+      const arrivalTime = new Date(arrival).getTime();
 
       console.log("PARSED TIMES", {
         departureRaw: departure,
@@ -51,7 +54,11 @@ export default function ConnectionCountdown({
         nowMs: now
       });
 
-      if (!departureTime || !arrivalTime) return;
+      // ✅ PROPER VALIDATION
+      if (Number.isNaN(departureTime) || Number.isNaN(arrivalTime)) {
+        console.log("❌ Invalid date parsing");
+        return;
+      }
 
       const diffMinutes = Math.floor((departureTime - now) / 60000);
 

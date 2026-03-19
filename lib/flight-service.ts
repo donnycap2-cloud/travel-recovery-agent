@@ -1,5 +1,3 @@
-import { parseAirportTime } from "@/lib/timezones";
-
 const AIRLABS_BASE_URL = "https://airlabs.co/api/v9";
 
 function getApiKey() {
@@ -33,6 +31,14 @@ function normalizeFlightNumber(f: string | null | undefined) {
   return f?.replace(/\s+/g, "").toUpperCase() ?? "";
 }
 
+function toISO(time: string | null): string | null {
+  if (!time) return null;
+
+  const ms = new Date(time).getTime();
+  if (Number.isNaN(ms)) return null;
+
+  return new Date(ms).toISOString();
+}
 
 export type ResolvedFlightInstance = {
   flightId: string;
@@ -50,7 +56,6 @@ export async function resolveFlightInstance(
 
   const normalizedInput = normalizeFlightNumber(flightNumber);
 
-  // --- Attempt 1: direct lookup
   const response = await safeFetch<
     Array<{
       flight_iata?: string;
@@ -72,83 +77,54 @@ export async function resolveFlightInstance(
         normalizeFlightNumber(f.flight_iata) === normalizedInput
     );
 
-    // fallback if no strict match
     if (candidates.length === 0) {
       candidates = response;
     }
 
-    // remove invalid times
     candidates = candidates.filter(f => f.dep_time);
 
     if (candidates.length === 0) return null;
 
-    // sort by departure time
+    // ✅ simple sort
     candidates.sort((a, b) => {
-      const aMs = parseAirportTime(
-        a.dep_time ?? null,
-        a.dep_iata ?? originAirport
-      );
-    
-      const bMs = parseAirportTime(
-        b.dep_time ?? null,
-        b.dep_iata ?? originAirport
-      );
-    
-      if (!aMs) return 1;   // push invalid to end
-      if (!bMs) return -1;
-      
+      const aMs = new Date(a.dep_time!).getTime();
+      const bMs = new Date(b.dep_time!).getTime();
+
+      if (Number.isNaN(aMs)) return 1;
+      if (Number.isNaN(bMs)) return -1;
+
       return aMs - bMs;
     });
 
     let flight = candidates[0];
 
-    // refine by closest date if provided
     if (date) {
       const target = new Date(date).getTime();
 
       flight = candidates.reduce((closest, current) => {
-        const closestMs = parseAirportTime(
-          closest.dep_time ?? null,
-          closest.dep_iata ?? originAirport
-        );
-      
-        const currentMs = parseAirportTime(
-          current.dep_time ?? null,
-          current.dep_iata ?? originAirport
-        );
-      
-        if (!closestMs) return current;
-        if (!currentMs) return closest;
-      
-        const closestDiff = Math.abs(closestMs - target);
-        const currentDiff = Math.abs(currentMs - target);
-      
-        return currentDiff < closestDiff ? current : closest;
+        const closestMs = new Date(closest.dep_time!).getTime();
+        const currentMs = new Date(current.dep_time!).getTime();
+
+        if (Number.isNaN(closestMs)) return current;
+        if (Number.isNaN(currentMs)) return closest;
+
+        return Math.abs(currentMs - target) < Math.abs(closestMs - target)
+          ? current
+          : closest;
       });
     }
 
-    const depMs = parseAirportTime(
-      flight.dep_time ?? null,
-      flight.dep_iata ?? originAirport
-    );
-    
-    const arrMs = parseAirportTime(
-      flight.arr_time ?? null,
-      flight.arr_iata ?? flight.dep_iata ?? originAirport
-    );
-    
     return {
       flightId: flight.flight_iata ?? flightNumber,
       origin: flight.dep_iata ?? originAirport,
       destination: flight.arr_iata ?? "",
-      scheduledDeparture: depMs ? new Date(depMs).toISOString() : null,
-      scheduledArrival: arrMs ? new Date(arrMs).toISOString() : null
+      scheduledDeparture: toISO(flight.dep_time ?? null),
+      scheduledArrival: toISO(flight.arr_time ?? null)
     };
   }
 
   console.log("Direct lookup failed, trying airport departures");
 
-  // --- Attempt 2: airport departures
   if (!originAirport) return null;
 
   const departures = await getAirportDepartures(originAirport);
@@ -161,22 +137,12 @@ export async function resolveFlightInstance(
 
   if (!match) return null;
 
-  const depMs = parseAirportTime(
-    match.departureTime,
-    originAirport
-  );
-  
-  const arrMs = parseAirportTime(
-    match.arrivalTime,
-    match.destination ?? ""
-  );
-  
   return {
     flightId: flightNumber,
     origin: originAirport,
     destination: match.destination ?? "",
-    scheduledDeparture: depMs ? new Date(depMs).toISOString() : null,
-    scheduledArrival: arrMs ? new Date(arrMs).toISOString() : null
+    scheduledDeparture: toISO(match.departureTime),
+    scheduledArrival: toISO(match.arrivalTime)
   };
 }
 
@@ -198,6 +164,7 @@ export async function getFlightStatus(
   originAirport: string,
   destinationAirport: string
 ): Promise<FlightStatus | null> {
+
   const response = await safeFetch<
     Array<{
       flight_number?: string;
@@ -207,7 +174,6 @@ export async function getFlightStatus(
       arr_estimated?: string;
       dep_actual?: string;
       arr_actual?: string;
-      status?: string;
     }>
   >("/flights", {
     flight_iata: flightIata
@@ -222,66 +188,28 @@ export async function getFlightStatus(
   if (validFlights.length === 0) return null;
 
   const flight = validFlights.reduce((closest, current) => {
-    const currentTime = parseAirportTime(
-      current.dep_time ?? null,
-      originAirport
-    );
-    
-    const closestTime = parseAirportTime(
-      closest.dep_time ?? null,
-      originAirport
-    );
-    
-    // 🔥 handle nulls safely
-    if (!currentTime) return closest;
-    if (!closestTime) return current;
-    
-    return Math.abs(currentTime - now) < Math.abs(closestTime - now)
+    const currentMs = new Date(current.dep_time!).getTime();
+    const closestMs = new Date(closest.dep_time!).getTime();
+
+    if (Number.isNaN(currentMs)) return closest;
+    if (Number.isNaN(closestMs)) return current;
+
+    return Math.abs(currentMs - now) < Math.abs(closestMs - now)
       ? current
       : closest;
   });
 
-  const depMs = parseAirportTime(
-    flight.dep_time ?? null,
-    originAirport
-  );
-  
-  const arrMs = parseAirportTime(
-    flight.arr_time ?? null,
-    destinationAirport
-  );
-  
-  const estDepMs = parseAirportTime(
-    flight.dep_estimated ?? null,
-    originAirport
-  );
-  
-  const estArrMs = parseAirportTime(
-    flight.arr_estimated ?? null,
-    destinationAirport
-  );
-  
-  const actDepMs = parseAirportTime(
-    flight.dep_actual ?? null,
-    originAirport
-  );
-  
-  const actArrMs = parseAirportTime(
-    flight.arr_actual ?? null,
-    destinationAirport
-  );
-  
   return {
     flightNumber: flight.flight_number ?? flightIata,
-  
-    scheduledDeparture: depMs ? new Date(depMs).toISOString() : null,
-    scheduledArrival: arrMs ? new Date(arrMs).toISOString() : null,
-  
-    estimatedDeparture: estDepMs ? new Date(estDepMs).toISOString() : null,
-    estimatedArrival: estArrMs ? new Date(estArrMs).toISOString() : null,
-  
-    actualDeparture: actDepMs ? new Date(actDepMs).toISOString() : null,
-    actualArrival: actArrMs ? new Date(actArrMs).toISOString() : null
+
+    scheduledDeparture: toISO(flight.dep_time ?? null),
+    scheduledArrival: toISO(flight.arr_time ?? null),
+
+    estimatedDeparture: toISO(flight.dep_estimated ?? null),
+    estimatedArrival: toISO(flight.arr_estimated ?? null),
+
+    actualDeparture: toISO(flight.dep_actual ?? null),
+    actualArrival: toISO(flight.arr_actual ?? null)
   };
 }
 
