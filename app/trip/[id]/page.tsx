@@ -140,18 +140,21 @@ export default async function TripMonitorPage({ params }: { params: { id: string
 
           {events && events.length > 0 ? (
             events.map((event) => {
+              const date = new Date(event.created_at);
+
+              const localMs =
+                date.getTime() + date.getTimezoneOffset() * 60000;
+
               return (
                 <div
                   key={event.id}
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-zinc-400">
-                    {event.created_at
-                      ? new Date(event.created_at).toLocaleTimeString([], {
-                          hour: "numeric",
-                          minute: "2-digit"
-                        })
-                      : "—"}
+                    {new Date(localMs).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit"
+                    })}
                   </span>
 
                   <span className="text-zinc-200">
