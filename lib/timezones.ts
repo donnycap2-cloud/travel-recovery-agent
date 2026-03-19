@@ -36,9 +36,17 @@ export function toUTCFromAirport(
 
   const zone = AIRPORT_TIMEZONES[airport] ?? "UTC";
 
-  const dt = DateTime.fromISO(localTime, { zone });
+  let dt = DateTime.fromISO(localTime, { zone });
 
-  if (!dt.isValid) return null;
+  // 🔥 fallback for "YYYY-MM-DD HH:mm"
+  if (!dt.isValid) {
+    dt = DateTime.fromFormat(localTime, "yyyy-MM-dd HH:mm", { zone });
+  }
+
+  if (!dt.isValid) {
+    console.log("❌ INVALID TIME:", localTime, airport);
+    return null;
+  }
 
   return dt.toUTC().toISO();
 }
