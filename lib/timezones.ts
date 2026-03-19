@@ -6,6 +6,8 @@ const AIRPORT_TIMEZONES: Record<string, string> = {
   LAX: "America/Los_Angeles",
   SFO: "America/Los_Angeles",
   SEA: "America/Los_Angeles",
+  LAS: "America/Los_Angeles",
+  SAN: "America/Los_Angeles",
 
   DEN: "America/Denver",
   SLC: "America/Denver",
@@ -20,6 +22,7 @@ const AIRPORT_TIMEZONES: Record<string, string> = {
   BOS: "America/New_York",
 
   // Caribbean (you)
+  STX: "America/St_Thomas",
   STT: "America/St_Thomas",
   SJU: "America/Puerto_Rico",
 
@@ -28,28 +31,31 @@ const AIRPORT_TIMEZONES: Record<string, string> = {
   CDG: "Europe/Paris",
 };
 
-export function toUTCFromAirport(
-    localTime: string | null,
+export function parseAirportTime(
+    time: string | null,
     airport: string
-  ): string | null {
-    if (!localTime) return null;
+  ): number | null {
+    if (!time) return null;
   
-    const zone = AIRPORT_TIMEZONES[airport] ?? "UTC";
+    const tz = AIRPORT_TIMEZONES[airport];
   
-    let dt = DateTime.fromISO(localTime, { zone });
-  
-    if (!dt.isValid) {
-      dt = DateTime.fromFormat(localTime, "yyyy-MM-dd HH:mm", {
-        zone,
-        setZone: true // 🔥 IMPORTANT
-      });
+    if (!tz) {
+      return new Date(time).getTime(); // fallback
     }
   
-    if (!dt.isValid) {
-      console.log("❌ INVALID TIME:", localTime, airport);
-      return null;
-    }
+    // 🔥 Force correct timezone interpretation
+    const date = new Date(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        hour12: false,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }).format(new Date(time))
+    );
   
-    // 🔥 KEY FIX: ensure zone is applied BEFORE UTC conversion
-    return dt.setZone(zone, { keepLocalTime: true }).toUTC().toISO();
+    return date.getTime();
   }
