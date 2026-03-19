@@ -185,7 +185,9 @@ export type FlightStatus = {
 };
 
 export async function getFlightStatus(
-  flightIata: string
+  flightIata: string,
+  originAirport: string,
+  destinationAirport: string
 ): Promise<FlightStatus | null> {
   const response = await safeFetch<
     Array<{
@@ -219,17 +221,47 @@ export async function getFlightStatus(
       : closest;
   });
 
+  const depMs = parseAirportTime(
+    flight.dep_time ?? null,
+    originAirport
+  );
+  
+  const arrMs = parseAirportTime(
+    flight.arr_time ?? null,
+    destinationAirport
+  );
+  
+  const estDepMs = parseAirportTime(
+    flight.dep_estimated ?? null,
+    originAirport
+  );
+  
+  const estArrMs = parseAirportTime(
+    flight.arr_estimated ?? null,
+    destinationAirport
+  );
+  
+  const actDepMs = parseAirportTime(
+    flight.dep_actual ?? null,
+    originAirport
+  );
+  
+  const actArrMs = parseAirportTime(
+    flight.arr_actual ?? null,
+    destinationAirport
+  );
+  
   return {
     flightNumber: flight.flight_number ?? flightIata,
-
-    scheduledDeparture: toISO(flight.dep_time ?? null),
-    scheduledArrival: toISO(flight.arr_time ?? null),
-
-    estimatedDeparture: toISO(flight.dep_estimated ?? null),
-    estimatedArrival: toISO(flight.arr_estimated ?? null),
-
-    actualDeparture: toISO(flight.dep_actual ?? null),
-    actualArrival: toISO(flight.arr_actual ?? null)
+  
+    scheduledDeparture: depMs ? new Date(depMs).toISOString() : null,
+    scheduledArrival: arrMs ? new Date(arrMs).toISOString() : null,
+  
+    estimatedDeparture: estDepMs ? new Date(estDepMs).toISOString() : null,
+    estimatedArrival: estArrMs ? new Date(estArrMs).toISOString() : null,
+  
+    actualDeparture: actDepMs ? new Date(actDepMs).toISOString() : null,
+    actualArrival: actArrMs ? new Date(actArrMs).toISOString() : null
   };
 }
 

@@ -81,8 +81,16 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
     // Fetch status
     const [statusF1, statusF2] = await Promise.all([
-      getFlightStatus(trip.flight_1_number),
-      getFlightStatus(trip.flight_2_number)
+      getFlightStatus(
+        trip.flight_1_number,
+        trip.origin_airport,
+        trip.connection_airport
+      ),
+      getFlightStatus(
+        trip.flight_2_number,
+        trip.connection_airport,
+        trip.destination_airport
+      )
     ]);
 
     const estimatedArrivalF1 =
