@@ -138,22 +138,31 @@ export default async function TripMonitorPage({ params }: { params: { id: string
 
           <div className="mt-2 space-y-2">
 
-            {events && events.length > 0 ? (
-              events.map((event) => (
+          {events && events.length > 0 ? (
+            events.map((event) => {
+              const ms = parseLocalTime(event.created_at);
+
+              return (
                 <div
                   key={event.id}
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-zinc-400">
-                    {formatTime(event.created_at)}
+                    {ms
+                      ? new Date(ms).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit"
+                        })
+                      : "—"}
                   </span>
 
                   <span className="text-zinc-200">
                     {event.new_state}
                   </span>
                 </div>
-              ))
-            ) : (
+              );
+            })
+          ) : (
               <p className="text-sm text-zinc-400">
                 No monitoring events yet.
               </p>
