@@ -115,10 +115,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       continue;
     }
 
-    // ✅ Compute connection margin
-    const connectionMinutes = Math.floor(
-      (departureMs - arrivalMs) / 60000
-    );
+    // ✅ Compute risk (single source of truth)
 
     const mctMinutes = getMCT(
       trip.connection_airport,
@@ -126,8 +123,8 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     );
 
     const risk = calculateConnectionRisk(
-      Math.floor(arrivalMs / 1000),
-      Math.floor(departureMs / 1000),
+      arrivalMs,     // ✅ pass ms (not seconds)
+      departureMs,   // ✅ pass ms (not seconds)
       mctMinutes
     );
 
@@ -138,36 +135,37 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       scheduled: trip.scheduled_departure_f2,
       estimated: trip.estimated_departure_f2,
       status: statusF2?.estimatedDeparture,
-      chosen: finalDepartureF2
+      chosen: finalDepartureF2,
+      computedConnectionMinutes: risk.connectionTimeRemaining // 🔥 debug truth
     });
 
-    // ✅ SINGLE CLEAN UPDATE
+    // ✅ SINGLE CLEAN UPDATE (uses risk engine output)
     await supabase
       .from("trips")
       .update({
         estimated_arrival_f1: finalArrivalF1,
         estimated_departure_f2: finalDepartureF2,
         monitoring_state: newState,
-        connection_time_remaining: connectionMinutes
+        connection_time_remaining: risk.connectionTimeRemaining // ✅ FIX
       })
       .eq("id", trip.id);
 
-    if (previousState !== newState) {
-      stateChanges++;
-    }
-
-    await supabase.from("debug_logs").insert({
-      message: `UPDATED STATE: ${newState}, margin=${connectionMinutes}`,
-      created_at: new Date().toISOString()
-    });
-
-    await supabase.from("risk_events").insert({
-      trip_id: trip.id,
-      previous_state: previousState,
-      new_state: newState,
-      connection_time_remaining: connectionMinutes
-    } satisfies Partial<RiskEventRow>);
-
+      if (previousState !== newState) {
+        stateChanges++;
+      }
+      
+      await supabase.from("debug_logs").insert({
+        message: `UPDATED STATE: ${newState}, margin=${risk.connectionTimeRemaining}`, // ✅ FIX
+        created_at: new Date().toISOString()
+      });
+      
+      await supabase.from("risk_events").insert({
+        trip_id: trip.id,
+        previous_state: previousState,
+        new_state: newState,
+        connection_time_remaining: risk.connectionTimeRemaining // ✅ FIX
+      } satisfies Partial<RiskEventRow>);
+      
     // ✅ Recovery triggers
     if (previousState !== "likely_missed" && newState === "likely_missed") {
       const options = await generateRecoveryPlan(
