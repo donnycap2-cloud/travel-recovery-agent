@@ -105,13 +105,28 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     trip.estimated_departure_f2 ??
     trip.scheduled_departure_f2;
 
-    await supabase
-      .from("trips")
-      .update({
-        estimated_arrival_f1: estimatedArrivalF1,
-        estimated_departure_f2: estimatedDepartureF2
-      })
-      .eq("id", trip.id);
+    const finalArrivalF1 =
+    estimatedArrivalF1 ?? trip.scheduled_arrival_f1;
+  
+  const finalDepartureF2 =
+    estimatedDepartureF2 ?? trip.scheduled_departure_f2;
+  
+  if (!finalArrivalF1 || !finalDepartureF2) {
+    console.log("SKIPPING — missing times", {
+      trip: trip.id,
+      estimatedArrivalF1,
+      estimatedDepartureF2
+    });
+    continue;
+  }
+  
+  await supabase
+    .from("trips")
+    .update({
+      estimated_arrival_f1: finalArrivalF1,
+      estimated_departure_f2: finalDepartureF2
+    })
+    .eq("id", trip.id);
 
       const arrivalF1Seconds = parseAirportTime(
         estimatedArrivalF1,
@@ -123,9 +138,13 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
         trip.connection_airport
       );
 
-    if (arrivalF1Seconds == null || departureF2Seconds == null) {
-      continue;
-    }
+      if (!arrivalF1Seconds || !departureF2Seconds) {
+        console.log("PARSE FAILED", {
+          arrival: finalArrivalF1,
+          departure: finalDepartureF2
+        });
+        continue;
+      }
 
     const mctMinutes = getMCT(
       trip.connection_airport,
