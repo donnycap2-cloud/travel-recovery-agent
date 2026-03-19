@@ -1,3 +1,5 @@
+import { parseLocalTime } from "@/lib/time";
+
 const MAJOR_HUBS = [
   "ATL", "DFW", "ORD", "DEN", "CLT", "IAH", "PHX", "LAS"
 ];
@@ -5,8 +7,8 @@ const MAJOR_HUBS = [
 type RecoveryOption = {
   flightNumber: string;
   airline: string;
-  departure: string; // ISO
-  arrival: string;   // ISO
+  departure: string; // raw string (treated as local)
+  arrival: string;
   origin: string;
   destination: string;
   duration: string;
@@ -27,8 +29,13 @@ async function getSchedules(dep: string, arr: string, apiKey: string) {
   return data?.response ?? [];
 }
 
-function calculateDuration(depIso: string, arrIso: string) {
-  const diff = new Date(arrIso).getTime() - new Date(depIso).getTime();
+function calculateDuration(dep: string, arr: string) {
+  const depMs = parseLocalTime(dep);
+  const arrMs = parseLocalTime(arr);
+
+  if (!depMs || !arrMs) return "—";
+
+  const diff = arrMs - depMs;
 
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(minutes / 60);
@@ -62,8 +69,7 @@ export async function generateRecoveryPlan(
 
   const now = Date.now();
 
-  // ✅ SIMPLE TIME HANDLING (NO TIMEZONE LOGIC)
-  const arrivalMs = arrivalTime ? new Date(arrivalTime).getTime() : null;
+  const arrivalMs = parseLocalTime(arrivalTime);
 
   const MCT_MINUTES = getMCT(connectionAirport);
 
@@ -84,15 +90,13 @@ export async function generateRecoveryPlan(
   let flights: RecoveryOption[] = directSchedules
     .map((flight: any) => {
 
-      const depMs = new Date(flight.dep_time).getTime();
-      const arrMs = new Date(flight.arr_time).getTime();
+      const depMs = parseLocalTime(flight.dep_time);
+      const arrMs = parseLocalTime(flight.arr_time);
 
-      if (Number.isNaN(depMs) || Number.isNaN(arrMs)) return null;
+      if (!depMs || !arrMs) return null;
 
-      // ❌ remove past flights
       if (depMs < now) return null;
 
-      // ❌ enforce MCT buffer
       if (earliestDeparture && depMs < earliestDeparture) return null;
 
       return {
@@ -123,22 +127,15 @@ export async function generateRecoveryPlan(
       for (const f1 of firstLegs.slice(0, 2)) {
         for (const f2 of secondLegs.slice(0, 2)) {
 
-          const f1DepMs = new Date(f1.dep_time).getTime();
-          const f1ArrMs = new Date(f1.arr_time).getTime();
-          const f2DepMs = new Date(f2.dep_time).getTime();
-          const f2ArrMs = new Date(f2.arr_time).getTime();
+          const f1DepMs = parseLocalTime(f1.dep_time);
+          const f1ArrMs = parseLocalTime(f1.arr_time);
+          const f2DepMs = parseLocalTime(f2.dep_time);
+          const f2ArrMs = parseLocalTime(f2.arr_time);
 
-          if (
-            Number.isNaN(f1DepMs) ||
-            Number.isNaN(f1ArrMs) ||
-            Number.isNaN(f2DepMs) ||
-            Number.isNaN(f2ArrMs)
-          ) continue;
+          if (!f1DepMs || !f1ArrMs || !f2DepMs || !f2ArrMs) continue;
 
-          // ❌ remove past
           if (f1DepMs < now) continue;
 
-          // ❌ enforce MCT buffer
           if (earliestDeparture && f1DepMs < earliestDeparture) continue;
 
           const layoverMinutes = (f2DepMs - f1ArrMs) / 60000;
@@ -180,11 +177,13 @@ export async function generateRecoveryPlan(
   const ranked = flights
     .sort((a, b) => {
 
-      const aDep = new Date(a.departure).getTime();
-      const bDep = new Date(b.departure).getTime();
+      const aDep = parseLocalTime(a.departure);
+      const bDep = parseLocalTime(b.departure);
 
-      const aArr = new Date(a.arrival).getTime();
-      const bArr = new Date(b.arrival).getTime();
+      const aArr = parseLocalTime(a.arrival);
+      const bArr = parseLocalTime(b.arrival);
+
+      if (!aDep || !bDep || !aArr || !bArr) return 0;
 
       const aSame = a.flightNumber?.startsWith(originalAirline);
       const bSame = b.flightNumber?.startsWith(originalAirline);

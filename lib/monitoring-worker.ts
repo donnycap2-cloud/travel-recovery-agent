@@ -6,6 +6,7 @@ import { calculateConnectionRisk } from "@/lib/risk-engine";
 import type { TripRow, RiskEventRow, LandingPlanRow } from "@/types/database";
 import { generateRecoveryPlan } from "@/lib/recovery-engine";
 import { getMCT } from "@/lib/mct";
+import { parseLocalTime } from "@/lib/time";
 
 type MonitoringSummary = {
   tripsProcessed: number;
@@ -92,8 +93,18 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     }
 
     // ✅ SAFE PARSING
-    const arrivalMs = new Date(finalArrivalF1).getTime();
-    const departureMs = new Date(finalDepartureF2).getTime();
+    const arrivalMs = parseLocalTime(finalArrivalF1);
+    const departureMs = parseLocalTime(finalDepartureF2);
+
+    // ✅ PROPER validation (no falsy check)
+    if (arrivalMs === null || departureMs === null) {
+      console.log("❌ PARSE NULL", {
+        trip: trip.id,
+        finalArrivalF1,
+        finalDepartureF2
+      });
+      continue;
+    }
 
     if (Number.isNaN(arrivalMs) || Number.isNaN(departureMs)) {
       console.log("❌ PARSE FAILED", {

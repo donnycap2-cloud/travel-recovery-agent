@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { parseLocalTime } from "@/lib/time";
 
 function formatMinutes(minutes: number) {
   const abs = Math.abs(minutes);
@@ -44,8 +45,20 @@ export default function ConnectionCountdown({
     const update = () => {
       const now = Date.now();
 
-      const departureTime = new Date(departure).getTime();
-      const arrivalTime = new Date(arrival).getTime();
+      const departureTime = parseLocalTime(departure);
+      const arrivalTime = parseLocalTime(arrival);
+
+      // ✅ FIXED: proper null check
+      if (departureTime === null || arrivalTime === null) {
+        console.log("❌ Null parsed times");
+        return;
+      }
+
+      // ✅ validate numbers
+      if (Number.isNaN(departureTime) || Number.isNaN(arrivalTime)) {
+        console.log("❌ Invalid date parsing");
+        return;
+      }
 
       console.log("PARSED TIMES", {
         departureRaw: departure,
@@ -53,12 +66,6 @@ export default function ConnectionCountdown({
         arrivalMs: arrivalTime,
         nowMs: now
       });
-
-      // ✅ PROPER VALIDATION
-      if (Number.isNaN(departureTime) || Number.isNaN(arrivalTime)) {
-        console.log("❌ Invalid date parsing");
-        return;
-      }
 
       const diffMinutes = Math.floor((departureTime - now) / 60000);
 

@@ -6,6 +6,19 @@ import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { MobileHeader } from "@/components/MobileHeader";
+import { parseLocalTime } from "@/lib/time";
+
+function formatTime(time: string | null) {
+  if (!time) return "—";
+
+  const ms = parseLocalTime(time);
+  if (ms === null) return "—";
+
+  return new Date(ms).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
 
 function getStatusUI(state: string | null) {
   switch (state) {
@@ -29,7 +42,7 @@ export default async function HomePage() {
     .from("trips")
     .select("*");
 
-  // 🔥 Sort by urgency instead of just created_at
+  // 🔥 Sort by urgency
   const sortedTrips = trips?.sort((a, b) => {
     const priority: Record<string, number> = {
       impossible: 0,
@@ -89,15 +102,9 @@ export default async function HomePage() {
                 Connection at {trip.connection_airport}
               </p>
 
-              {/* Time context */}
+              {/* Time */}
               <p className="text-xs text-zinc-500 mt-1">
-                Departs{" "}
-                {trip.scheduled_departure_f1
-                  ? new Date(trip.scheduled_departure_f1).toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit"
-                    })
-                  : "—"}
+                Departs {formatTime(trip.scheduled_departure_f1)}
               </p>
 
               {/* Status */}

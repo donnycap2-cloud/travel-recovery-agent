@@ -5,7 +5,20 @@ import { unstable_noStore as noStore } from "next/cache";
 import { MobileHeader } from "@/components/MobileHeader";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import ConnectionCountdown from "@/components/ConnectionCountdown"
+import ConnectionCountdown from "@/components/ConnectionCountdown";
+import { parseLocalTime } from "@/lib/time";
+
+function formatTime(time: string | null) {
+  if (!time) return "—";
+
+  const ms = parseLocalTime(time);
+  if (ms === null) return "—";
+
+  return new Date(ms).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
 
 function getRiskDisplay(state: string | null) {
   switch (state) {
@@ -33,7 +46,7 @@ export default async function TripMonitorPage({ params }: { params: { id: string
     .eq("id", id)
     .single();
 
-    const { data: events } = await supabase
+  const { data: events } = await supabase
     .from("risk_events")
     .select("*")
     .eq("trip_id", id)
@@ -61,9 +74,7 @@ export default async function TripMonitorPage({ params }: { params: { id: string
         <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
           <p className="text-xs uppercase tracking-wide text-zinc-400">
             Connection Status
-
           </p>
-
 
           <div className="mt-2 space-y-1">
             <p className={`text-lg font-semibold ${risk.color}`}>
@@ -89,33 +100,23 @@ export default async function TripMonitorPage({ params }: { params: { id: string
 
             <div className="mt-2 space-y-1 text-sm text-zinc-200">
 
-            <p>
-              Flight 1 arrival:
-              <span className="font-medium text-zinc-100 ml-1">
-                {trip.estimated_arrival_f1 || trip.scheduled_arrival_f1
-                  ? new Date(
-                      trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1
-                    ).toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit"
-                    })
-                  : "—"}
-              </span>
-            </p>
+              <p>
+                Flight 1 arrival:
+                <span className="font-medium text-zinc-100 ml-1">
+                  {formatTime(
+                    trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1
+                  )}
+                </span>
+              </p>
 
-            <p>
-              Flight 2 departure:
-              <span className="font-medium text-zinc-100 ml-1">
-                {trip.estimated_departure_f2 || trip.scheduled_departure_f2
-                  ? new Date(
-                      trip.estimated_departure_f2 ?? trip.scheduled_departure_f2
-                    ).toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit"
-                    })
-                  : "—"}
-              </span>
-            </p>
+              <p>
+                Flight 2 departure:
+                <span className="font-medium text-zinc-100 ml-1">
+                  {formatTime(
+                    trip.estimated_departure_f2 ?? trip.scheduled_departure_f2
+                  )}
+                </span>
+              </p>
 
             </div>
 
@@ -131,39 +132,36 @@ export default async function TripMonitorPage({ params }: { params: { id: string
 
         <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
 
-<p className="text-xs uppercase tracking-wide text-zinc-400">
-  Monitoring Timeline
-</p>
+          <p className="text-xs uppercase tracking-wide text-zinc-400">
+            Monitoring Timeline
+          </p>
 
-<div className="mt-2 space-y-2">
+          <div className="mt-2 space-y-2">
 
-  {events && events.length > 0 ? (
-    events.map((event) => (
-      <div
-        key={event.id}
-        className="flex items-center justify-between text-sm"
-      >
-        <span className="text-zinc-400">
-          {new Date(event.created_at).toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "2-digit"
-          })}
-        </span>
+            {events && events.length > 0 ? (
+              events.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span className="text-zinc-400">
+                    {formatTime(event.created_at)}
+                  </span>
 
-        <span className="text-zinc-200">
-          {event.new_state}
-        </span>
-      </div>
-    ))
-  ) : (
-    <p className="text-sm text-zinc-400">
-      No monitoring events yet.
-    </p>
-  )}
+                  <span className="text-zinc-200">
+                    {event.new_state}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-zinc-400">
+                No monitoring events yet.
+              </p>
+            )}
 
-</div>
+          </div>
 
-</div>
+        </div>
 
         <Link
           href={`/plan/${encodeURIComponent(id)}`}

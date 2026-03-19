@@ -31,17 +31,16 @@ function normalizeFlightNumber(f: string | null | undefined) {
   return f?.replace(/\s+/g, "").toUpperCase() ?? "";
 }
 
+// ✅ IMPORTANT: normalize but DO NOT trust timezone
 function toISO(time: string | null): string | null {
   if (!time) return null;
 
-  // ❌ DO NOT trust timezone
-  // Treat as LOCAL time
+  const clean = time.replace("Z", ""); // strip misleading UTC
 
-  const local = new Date(time.replace("Z", ""));
+  const date = new Date(clean);
+  if (Number.isNaN(date.getTime())) return null;
 
-  if (Number.isNaN(local.getTime())) return null;
-
-  return local.toISOString();
+  return date.toISOString();
 }
 
 export type ResolvedFlightInstance = {
@@ -89,7 +88,7 @@ export async function resolveFlightInstance(
 
     if (candidates.length === 0) return null;
 
-    // ✅ simple sort
+    // ✅ simple stable sort
     candidates.sort((a, b) => {
       const aMs = new Date(a.dep_time!).getTime();
       const bMs = new Date(b.dep_time!).getTime();
@@ -122,8 +121,8 @@ export async function resolveFlightInstance(
       flightId: flight.flight_iata ?? flightNumber,
       origin: flight.dep_iata ?? originAirport,
       destination: flight.arr_iata ?? "",
-      scheduledDeparture: flight.dep_time ?? null,
-      scheduledArrival: flight.arr_time ?? null
+      scheduledDeparture: toISO(flight.dep_time ?? null),
+      scheduledArrival: toISO(flight.arr_time ?? null)
     };
   }
 

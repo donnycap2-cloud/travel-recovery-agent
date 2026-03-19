@@ -1,19 +1,26 @@
 import { MobileHeader } from "@/components/MobileHeader";
 import { supabase } from "@/lib/supabase";
+import { parseLocalTime } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
 function formatTime(time: string) {
-  return new Date(time).toLocaleTimeString([], {
+  const ms = parseLocalTime(time);
+  if (ms === null) return "—";
+
+  return new Date(ms).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit"
   });
 }
 
 function formatDuration(dep: string, arr: string) {
-  const diff = new Date(arr).getTime() - new Date(dep).getTime();
+  const depMs = parseLocalTime(dep);
+  const arrMs = parseLocalTime(arr);
 
-  const minutes = Math.floor(diff / 60000);
+  if (depMs === null || arrMs === null) return "—";
+
+  const minutes = Math.floor((arrMs - depMs) / 60000);
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
 
@@ -22,28 +29,26 @@ function formatDuration(dep: string, arr: string) {
 
 function getRecoveryReason(option: any, index: number, trip: any) {
   const originalAirline = trip?.flight_2_number?.slice(0, 2);
-
   const reasons: string[] = [];
 
-  // 1. Airline continuity (important for rebooking)
   if (option.flightNumber?.startsWith(originalAirline)) {
     reasons.push("Same airline → easier rebooking");
   }
 
-  // 2. Arrival comparison
   if (index === 0) {
     reasons.push("Earliest arrival after missed connection");
   }
 
-  // 3. Timing realism (THIS is key)
   if (trip?.estimated_arrival_f1 && option.departure) {
-    const arrival = new Date(trip.estimated_arrival_f1).getTime();
-    const departure = new Date(option.departure).getTime();
+    const arrival = parseLocalTime(trip.estimated_arrival_f1);
+    const departure = parseLocalTime(option.departure);
 
-    const bufferMinutes = Math.round((departure - arrival) / 60000);
+    if (arrival !== null && departure !== null) {
+      const bufferMinutes = Math.round((departure - arrival) / 60000);
 
-    if (bufferMinutes > 0) {
-      reasons.push(`${bufferMinutes} min to make this connection`);
+      if (bufferMinutes > 0) {
+        reasons.push(`${bufferMinutes} min to make this connection`);
+      }
     }
   }
 
@@ -55,8 +60,10 @@ function getDelayImpact(trip: any) {
     return null;
   }
 
-  const arrival = new Date(trip.estimated_arrival_f1).getTime();
-  const departure = new Date(trip.scheduled_departure_f2).getTime();
+  const arrival = parseLocalTime(trip.estimated_arrival_f1);
+  const departure = parseLocalTime(trip.scheduled_departure_f2);
+
+  if (arrival === null || departure === null) return null;
 
   const diffMinutes = Math.round((arrival - departure) / 60000);
 
@@ -92,12 +99,16 @@ export default async function PlanPage({
   const alternatives = plan?.options?.slice(1) ?? [];
 
   const bufferMinutes =
-  trip?.estimated_arrival_f1 && best?.departure
-    ? Math.round(
-        (new Date(best.departure).getTime() -
-          new Date(trip.estimated_arrival_f1).getTime()) / 60000
-      )
-    : null;
+    trip?.estimated_arrival_f1 && best?.departure
+      ? (() => {
+          const arrival = parseLocalTime(trip.estimated_arrival_f1);
+          const departure = parseLocalTime(best.departure);
+
+          if (arrival === null || departure === null) return null;
+
+          return Math.round((departure - arrival) / 60000);
+        })()
+      : null;
 
   return (
     <main>
@@ -139,11 +150,11 @@ export default async function PlanPage({
                   Departs {formatTime(best.departure)} • Arrives {formatTime(best.arrival)}
                 </p>
 
-                {bufferMinutes && (
-                <p className="text-xs text-zinc-400">
-                  {bufferMinutes} min connection buffer
-                </p>
-              )}
+                {bufferMinutes !== null && (
+                  <p className="text-xs text-zinc-400">
+                    {bufferMinutes} min connection buffer
+                  </p>
+                )}
 
                 <p className="text-sm text-zinc-400">
                   {best.origin || trip.connection_airport} → {best.destination || trip.destination_airport} •{" "}
