@@ -37,26 +37,37 @@ export function parseAirportTime(
     if (!tz) return new Date(time).getTime();
   
     try {
-      // Step 1: parse while IGNORING provided timezone
-      const dt = DateTime.fromISO(time, { setZone: true });
+      // 1. Parse ISO (ignore its timezone meaning)
+      const parsed = DateTime.fromISO(time);
   
-      // Step 2: force reinterpret as airport local time
+      if (!parsed.isValid) {
+        console.log("INVALID DATE", time);
+        return null;
+      }
+  
+      // 2. Reinterpret same clock time in airport timezone
       const local = DateTime.fromObject(
         {
-          year: dt.year,
-          month: dt.month,
-          day: dt.day,
-          hour: dt.hour,
-          minute: dt.minute,
-          second: dt.second
+          year: parsed.year,
+          month: parsed.month,
+          day: parsed.day,
+          hour: parsed.hour,
+          minute: parsed.minute,
+          second: parsed.second
         },
         { zone: tz }
       );
   
-      if (!local.isValid) return null;
+      if (!local.isValid) {
+        console.log("INVALID LOCAL", time, airport);
+        return null;
+      }
   
+      // 3. Convert to UTC timestamp
       return local.toUTC().toMillis();
-    } catch {
+  
+    } catch (err) {
+      console.log("PARSE ERROR", time, airport, err);
       return null;
     }
   }
