@@ -33,18 +33,6 @@ function normalizeFlightNumber(f: string | null | undefined) {
   return f?.replace(/\s+/g, "").toUpperCase() ?? "";
 }
 
-// 🔥 CRITICAL: normalize all times to ISO UTC
-function toISO(time: string | null): string | null {
-  if (!time) return null;
-
-  // 🔥 If already ISO → keep it
-  if (time.includes("T")) {
-    return new Date(time).toISOString();
-  }
-
-  // 🔥 If no timezone → force UTC
-  return new Date(time + "Z").toISOString();
-}
 
 export type ResolvedFlightInstance = {
   flightId: string;
@@ -95,11 +83,22 @@ export async function resolveFlightInstance(
     if (candidates.length === 0) return null;
 
     // sort by departure time
-    candidates.sort(
-      (a, b) =>
-        new Date(a.dep_time!).getTime() -
-        new Date(b.dep_time!).getTime()
-    );
+    candidates.sort((a, b) => {
+      const aMs = parseAirportTime(
+        a.dep_time ?? null,
+        a.dep_iata ?? originAirport
+      );
+    
+      const bMs = parseAirportTime(
+        b.dep_time ?? null,
+        b.dep_iata ?? originAirport
+      );
+    
+      if (!aMs) return 1;   // push invalid to end
+      if (!bMs) return -1;
+      
+      return aMs - bMs;
+    });
 
     let flight = candidates[0];
 
@@ -108,12 +107,22 @@ export async function resolveFlightInstance(
       const target = new Date(date).getTime();
 
       flight = candidates.reduce((closest, current) => {
-        const closestTime = new Date(closest.dep_time!).getTime();
-        const currentTime = new Date(current.dep_time!).getTime();
-
-        const closestDiff = Math.abs(closestTime - target);
-        const currentDiff = Math.abs(currentTime - target);
-
+        const closestMs = parseAirportTime(
+          closest.dep_time ?? null,
+          closest.dep_iata ?? originAirport
+        );
+      
+        const currentMs = parseAirportTime(
+          current.dep_time ?? null,
+          current.dep_iata ?? originAirport
+        );
+      
+        if (!closestMs) return current;
+        if (!currentMs) return closest;
+      
+        const closestDiff = Math.abs(closestMs - target);
+        const currentDiff = Math.abs(currentMs - target);
+      
         return currentDiff < closestDiff ? current : closest;
       });
     }
@@ -125,7 +134,7 @@ export async function resolveFlightInstance(
     
     const arrMs = parseAirportTime(
       flight.arr_time ?? null,
-      flight.arr_iata ?? ""
+      flight.arr_iata ?? flight.dep_iata ?? originAirport
     );
     
     return {
@@ -213,9 +222,20 @@ export async function getFlightStatus(
   if (validFlights.length === 0) return null;
 
   const flight = validFlights.reduce((closest, current) => {
-    const currentTime = new Date(current.dep_time!).getTime();
-    const closestTime = new Date(closest.dep_time!).getTime();
-
+    const currentTime = parseAirportTime(
+      current.dep_time ?? null,
+      originAirport
+    );
+    
+    const closestTime = parseAirportTime(
+      closest.dep_time ?? null,
+      originAirport
+    );
+    
+    // 🔥 handle nulls safely
+    if (!currentTime) return closest;
+    if (!closestTime) return current;
+    
     return Math.abs(currentTime - now) < Math.abs(closestTime - now)
       ? current
       : closest;
