@@ -28,26 +28,35 @@ const AIRPORT_TIMEZONES: Record<string, string> = {
 };
 
 export function parseAirportTime(
-  time: string | null,
-  airport: string
-): number | null {
-  if (!time) return null;
-
-  const tz = AIRPORT_TIMEZONES[airport];
-  if (!tz) {
-    return new Date(time).getTime();
+    time: string | null,
+    airport: string
+  ): number | null {
+    if (!time) return null;
+  
+    const tz = AIRPORT_TIMEZONES[airport];
+    if (!tz) return new Date(time).getTime();
+  
+    try {
+      // Step 1: parse while IGNORING provided timezone
+      const dt = DateTime.fromISO(time, { setZone: true });
+  
+      // Step 2: force reinterpret as airport local time
+      const local = DateTime.fromObject(
+        {
+          year: dt.year,
+          month: dt.month,
+          day: dt.day,
+          hour: dt.hour,
+          minute: dt.minute,
+          second: dt.second
+        },
+        { zone: tz }
+      );
+  
+      if (!local.isValid) return null;
+  
+      return local.toUTC().toMillis();
+    } catch {
+      return null;
+    }
   }
-
-  try {
-    // 🔥 strip ANY timezone info from API
-    const cleaned = time.replace(/Z|[+-]\d{2}:\d{2}$/, "");
-
-    const dt = DateTime.fromISO(cleaned, { zone: tz });
-
-    if (!dt.isValid) return null;
-
-    return dt.toUTC().toMillis();
-  } catch {
-    return null;
-  }
-}
