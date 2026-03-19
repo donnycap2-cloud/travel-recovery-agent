@@ -13,18 +13,11 @@ type MonitoringSummary = {
   stateChanges: number;
 };
 
-function toEpochSeconds(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const ms = Date.parse(value);
-  return Number.isNaN(ms) ? null : Math.floor(ms / 1000);
-}
-
 let lastRun = 0;
 
 export async function runMonitoringCycle(): Promise<MonitoringSummary> {
-
   const now = Date.now();
-  
+
   // ✅ Rate limiter
   if (now - lastRun < 60000) {
     console.log("Skipping — ran too recently");
@@ -40,16 +33,10 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     created_at: new Date().toISOString()
   });
 
-
-
-  const windowStart = new Date(now - 12 * 60 * 60 * 1000).toISOString();
-  const windowEnd = new Date(now + 12 * 60 * 60 * 1000).toISOString();
-  
   const { data: trips, error } = await supabase
     .from("trips")
     .select("*")
-    .eq("status", "active")
-
+    .eq("status", "active");
 
   if (error || !trips || trips.length === 0) {
     return { tripsProcessed: 0, stateChanges: 0 };
@@ -57,29 +44,21 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
   console.log("Trips found:", trips.length);
 
-  await supabase.from("debug_logs").insert({
-    message: `TRIPS FOUND: ${trips.length}`,
-    created_at: new Date().toISOString()
-  });
-
   let tripsProcessed = 0;
   let stateChanges = 0;
 
   for (const trip of trips as TripRow[]) {
-
     console.log("TRIP DEBUG", {
       id: trip.id,
       dep2: trip.scheduled_departure_f2,
       arr1: trip.scheduled_arrival_f1
     });
 
-    if (!trip.flight_1_number || !trip.flight_2_number) {
-      continue;
-    }
+    if (!trip.flight_1_number || !trip.flight_2_number) continue;
 
     tripsProcessed++;
 
-    // Fetch status
+    // ✅ Fetch flight status with correct airports
     const [statusF1, statusF2] = await Promise.all([
       getFlightStatus(
         trip.flight_1_number,
@@ -93,58 +72,50 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       )
     ]);
 
-    const estimatedArrivalF1 =
-    statusF1?.actualArrival ??
-    statusF1?.estimatedArrival ??
-    trip.estimated_arrival_f1 ??
-    trip.scheduled_arrival_f1;
-  
-  const estimatedDepartureF2 =
-    statusF2?.actualDeparture ??
-    statusF2?.estimatedDeparture ??
-    trip.estimated_departure_f2 ??
-    trip.scheduled_departure_f2;
-
+    // ✅ HARD FALLBACKS (never null)
     const finalArrivalF1 =
-    estimatedArrivalF1 ?? trip.scheduled_arrival_f1;
-  
-  const finalDepartureF2 =
-    estimatedDepartureF2 ?? trip.scheduled_departure_f2;
-  
-  if (!finalArrivalF1 || !finalDepartureF2) {
-    console.log("SKIPPING — missing times", {
-      trip: trip.id,
-      estimatedArrivalF1,
-      estimatedDepartureF2
-    });
-    continue;
-  }
-  
-  await supabase
-    .from("trips")
-    .update({
-      estimated_arrival_f1: finalArrivalF1,
-      estimated_departure_f2: finalDepartureF2
-    })
-    .eq("id", trip.id);
+      statusF1?.actualArrival ??
+      statusF1?.estimatedArrival ??
+      trip.scheduled_arrival_f1;
 
-      const arrivalF1Seconds = parseAirportTime(
-        estimatedArrivalF1,
-        trip.connection_airport
-      );
-      
-      const departureF2Seconds = parseAirportTime(
-        estimatedDepartureF2,
-        trip.connection_airport
-      );
+    const finalDepartureF2 =
+      statusF2?.actualDeparture ??
+      statusF2?.estimatedDeparture ??
+      trip.scheduled_departure_f2;
 
-      if (!arrivalF1Seconds || !departureF2Seconds) {
-        console.log("PARSE FAILED", {
-          arrival: finalArrivalF1,
-          departure: finalDepartureF2
-        });
-        continue;
-      }
+    if (!finalArrivalF1 || !finalDepartureF2) {
+      console.log("❌ NO VALID TIMES", {
+        trip: trip.id,
+        statusF1,
+        statusF2
+      });
+      continue;
+    }
+
+    // ✅ Parse AFTER fallback
+    const arrivalMs = parseAirportTime(
+      finalArrivalF1,
+      trip.connection_airport
+    );
+
+    const departureMs = parseAirportTime(
+      finalDepartureF2,
+      trip.connection_airport
+    );
+
+    if (!arrivalMs || !departureMs) {
+      console.log("❌ PARSE FAILED", {
+        trip: trip.id,
+        finalArrivalF1,
+        finalDepartureF2
+      });
+      continue;
+    }
+
+    // ✅ Compute connection margin
+    const connectionMinutes = Math.floor(
+      (departureMs - arrivalMs) / 60000
+    );
 
     const mctMinutes = getMCT(
       trip.connection_airport,
@@ -152,29 +123,31 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
     );
 
     const risk = calculateConnectionRisk(
-      arrivalF1Seconds,
-      departureF2Seconds,
+      Math.floor(arrivalMs / 1000),
+      Math.floor(departureMs / 1000),
       mctMinutes
     );
 
     const previousState = trip.monitoring_state ?? "safe";
     const newState = risk.state;
 
-    // Always update BOTH
+    // ✅ SINGLE CLEAN UPDATE (no double writes)
     await supabase
       .from("trips")
       .update({
+        estimated_arrival_f1: finalArrivalF1,
+        estimated_departure_f2: finalDepartureF2,
         monitoring_state: newState,
-        connection_time_remaining: risk.connectionTimeRemaining
+        connection_time_remaining: connectionMinutes
       })
       .eq("id", trip.id);
 
-      if (previousState !== newState) {
-        stateChanges++;
-      }
+    if (previousState !== newState) {
+      stateChanges++;
+    }
 
     await supabase.from("debug_logs").insert({
-      message: `UPDATED STATE: ${newState}, margin=${risk.connectionTimeRemaining}`,
+      message: `UPDATED STATE: ${newState}, margin=${connectionMinutes}`,
       created_at: new Date().toISOString()
     });
 
@@ -182,18 +155,18 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       trip_id: trip.id,
       previous_state: previousState,
       new_state: newState,
-      connection_time_remaining: risk.connectionTimeRemaining
+      connection_time_remaining: connectionMinutes
     } satisfies Partial<RiskEventRow>);
 
-
-
+    // ✅ Recovery triggers
     if (previousState !== "likely_missed" && newState === "likely_missed") {
       const options = await generateRecoveryPlan(
         trip.connection_airport,
         trip.destination_airport,
-        estimatedArrivalF1,
+        finalArrivalF1,
         trip.flight_2_number
       );
+
       await supabase.from("landing_plans").insert({
         trip_id: trip.id,
         created_at: new Date().toISOString(),
@@ -206,9 +179,10 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       const options = await generateRecoveryPlan(
         trip.connection_airport,
         trip.destination_airport,
-        estimatedArrivalF1,
+        finalArrivalF1,
         trip.flight_2_number
       );
+
       await supabase.from("landing_plans").insert({
         trip_id: trip.id,
         created_at: new Date().toISOString(),

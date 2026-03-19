@@ -71,7 +71,7 @@ export default async function TripMonitorPage({ params }: { params: { id: string
             </p>
 
             <ConnectionCountdown
-              departure={trip.scheduled_departure_f2}
+              departure={trip.estimated_departure_f2 ?? trip.scheduled_departure_f2}
               arrival={trip.estimated_arrival_f1 ?? trip.scheduled_arrival_f1}
               airport={trip.connection_airport}
             />
