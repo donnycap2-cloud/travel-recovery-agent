@@ -99,7 +99,7 @@ export default function ConnectionCountdown({
   return (
     <div className="space-y-1">
       <p className="text-lg font-semibold text-zinc-50">
-        {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`} until departure
+       {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`} until departure from {airport}
       </p>
 
       <p
