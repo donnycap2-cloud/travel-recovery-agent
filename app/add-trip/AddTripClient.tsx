@@ -50,7 +50,10 @@ export function AddTripClient() {
             Arrival:{" "}
             <span className="font-medium text-zinc-100">
               {flight1.arrivalTime
-                ? new Date(flight1.arrivalTime).toLocaleTimeString([], {
+                ? new Date(flight1.arrivalTime).toLocaleString([], {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
                     hour: "numeric",
                     minute: "2-digit"
                   })
@@ -70,7 +73,10 @@ export function AddTripClient() {
             Departure:{" "}
             <span className="font-medium text-zinc-100">
               {flight2.departureTime
-                ? new Date(flight2.departureTime).toLocaleTimeString([], {
+                ? new Date(flight2.departureTime).toLocaleString([], {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
                     hour: "numeric",
                     minute: "2-digit"
                   })
