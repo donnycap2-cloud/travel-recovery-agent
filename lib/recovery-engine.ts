@@ -56,6 +56,9 @@ export async function generateRecoveryPlan(
   if (!apiKey) return [];
 
   const now = Date.now();
+  const arrivalMs = parseLocalTime(arrivalTime);
+
+  const MIN_BUFFER = 30 * 60 * 1000; // 30 minutes
 
   // ========================
   // DIRECT FLIGHTS
@@ -75,8 +78,11 @@ export async function generateRecoveryPlan(
 
       if (!depMs || !arrMs) return null;
 
-      // ✅ ONLY filter out very old flights
+      // ❌ remove very old flights
       if (depMs < now - 60 * 60 * 1000) return null;
+
+      // ✅ MUST be catchable after arrival
+      if (arrivalMs && depMs < arrivalMs + MIN_BUFFER) return null;
 
       return {
         airline: flight.airline_iata ?? "Airline",
@@ -113,12 +119,14 @@ export async function generateRecoveryPlan(
 
           if (!f1DepMs || !f1ArrMs || !f2DepMs || !f2ArrMs) continue;
 
-          // ✅ only filter very old
+          // ❌ remove very old
           if (f1DepMs < now - 60 * 60 * 1000) continue;
+
+          // ✅ must be catchable
+          if (arrivalMs && f1DepMs < arrivalMs + MIN_BUFFER) continue;
 
           const layoverMinutes = (f2DepMs - f1ArrMs) / 60000;
 
-          // keep SOME sanity but not strict
           if (layoverMinutes < 30) continue;
 
           flights.push({
@@ -187,7 +195,7 @@ export async function generateRecoveryPlan(
     .slice(0, 3);
 
   // ========================
-  // ✅ GUARANTEE OUTPUT (MVP CRITICAL)
+  // GUARANTEE OUTPUT
   // ========================
 
   if (ranked.length === 0) {
