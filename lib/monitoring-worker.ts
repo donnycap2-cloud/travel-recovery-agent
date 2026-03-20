@@ -72,15 +72,16 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       )
     ]);
 
-    // ✅ HARD FALLBACKS (never null)
     const finalArrivalF1 =
-      statusF1?.actualArrival ??
-      statusF1?.estimatedArrival ??
-      trip.scheduled_arrival_f1;
-
+    statusF1?.actualArrival ??
+    statusF1?.estimatedArrival ??
+    trip.estimated_arrival_f1 ??   // ✅ ADD
+    trip.scheduled_arrival_f1;
+  
     const finalDepartureF2 =
       statusF2?.actualDeparture ??
       statusF2?.estimatedDeparture ??
+      trip.estimated_departure_f2 ?? // ✅ ADD
       trip.scheduled_departure_f2;
 
     if (!finalArrivalF1 || !finalDepartureF2) {
@@ -167,7 +168,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       } satisfies Partial<RiskEventRow>);
       
     // ✅ Recovery triggers
-    if (previousState !== "likely_missed" && newState === "likely_missed") {
+    if (newState === "likely_missed") {
       const options = await generateRecoveryPlan(
         trip.connection_airport,
         trip.destination_airport,
@@ -183,7 +184,7 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
       } satisfies Partial<LandingPlanRow>);
     }
 
-    if (previousState !== "impossible" && newState === "impossible") {
+    if (newState === "impossible") {
       const options = await generateRecoveryPlan(
         trip.connection_airport,
         trip.destination_airport,
