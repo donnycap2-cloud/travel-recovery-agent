@@ -16,6 +16,7 @@ type RecoveryOption = {
 
 const AIRLABS_BASE_URL = "https://airlabs.co/api/v9";
 
+
 async function getSchedules(dep: string, arr: string, apiKey: string) {
   const url =
     `${AIRLABS_BASE_URL}/schedules` +
