@@ -39,30 +39,45 @@ export function AddTripClient() {
         <MobileHeader title="Confirm trip" backHref="/add-trip" />
 
         <section className="space-y-3">
-          <Card>
-            <p className="text-xs uppercase tracking-wide text-zinc-400">Flight 1</p>
-            <p className="mt-1 text-sm font-semibold text-zinc-50">{flight1.flightNumber}</p>
-            <p className="mt-2 text-sm text-zinc-200">
-              <span className="font-medium text-zinc-100">{flight1.origin}</span> →{" "}
-              <span className="font-medium text-zinc-100">{flight1.destination}</span>
-            </p>
-            <p className="mt-1 text-sm text-zinc-200">
-              Arrival: <span className="font-medium text-zinc-100">{flight1.arrivalTime}</span>
-            </p>
-          </Card>
+        <Card>
+          <p className="text-xs uppercase tracking-wide text-zinc-400">Flight 1</p>
+          <p className="mt-1 text-sm font-semibold text-zinc-50">{flight1.flightNumber}</p>
+          <p className="mt-2 text-sm text-zinc-200">
+            <span className="font-medium text-zinc-100">{flight1.origin}</span> →{" "}
+            <span className="font-medium text-zinc-100">{flight1.destination}</span>
+          </p>
+          <p className="mt-1 text-sm text-zinc-200">
+            Arrival:{" "}
+            <span className="font-medium text-zinc-100">
+              {flight1.arrivalTime
+                ? new Date(flight1.arrivalTime).toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit"
+                  })
+                : "—"}
+            </span>
+          </p>
+        </Card>
 
-          <Card>
-            <p className="text-xs uppercase tracking-wide text-zinc-400">Flight 2</p>
-            <p className="mt-1 text-sm font-semibold text-zinc-50">{flight2.flightNumber}</p>
-            <p className="mt-2 text-sm text-zinc-200">
-              <span className="font-medium text-zinc-100">{flight2.origin}</span> →{" "}
-              <span className="font-medium text-zinc-100">{flight2.destination}</span>
-            </p>
-            <p className="mt-1 text-sm text-zinc-200">
-              Departure:{" "}
-              <span className="font-medium text-zinc-100">{flight2.departureTime}</span>
-            </p>
-          </Card>
+        <Card>
+          <p className="text-xs uppercase tracking-wide text-zinc-400">Flight 2</p>
+          <p className="mt-1 text-sm font-semibold text-zinc-50">{flight2.flightNumber}</p>
+          <p className="mt-2 text-sm text-zinc-200">
+            <span className="font-medium text-zinc-100">{flight2.origin}</span> →{" "}
+            <span className="font-medium text-zinc-100">{flight2.destination}</span>
+          </p>
+          <p className="mt-1 text-sm text-zinc-200">
+            Departure:{" "}
+            <span className="font-medium text-zinc-100">
+              {flight2.departureTime
+                ? new Date(flight2.departureTime).toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit"
+                  })
+                : "—"}
+            </span>
+          </p>
+        </Card>
 
           <Card className="flex items-center justify-between">
             <div>
