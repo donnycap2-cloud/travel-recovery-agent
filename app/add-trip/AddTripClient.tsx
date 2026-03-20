@@ -50,13 +50,18 @@ export function AddTripClient() {
             Arrival:{" "}
             <span className="font-medium text-zinc-100">
               {flight1.arrivalTime
-                ? new Date(flight1.arrivalTime).toLocaleString([], {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit"
-                  })
+                ? (() => {
+                    const d = new Date(flight1.arrivalTime);
+                    const localMs = d.getTime() + d.getTimezoneOffset() * 60000;
+
+                    return new Date(localMs).toLocaleString([], {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit"
+                    });
+                  })()
                 : "—"}
             </span>
           </p>
@@ -73,13 +78,18 @@ export function AddTripClient() {
             Departure:{" "}
             <span className="font-medium text-zinc-100">
               {flight2.departureTime
-                ? new Date(flight2.departureTime).toLocaleString([], {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit"
-                  })
+                ? (() => {
+                    const d = new Date(flight2.departureTime);
+                    const localMs = d.getTime() + d.getTimezoneOffset() * 60000;
+
+                    return new Date(localMs).toLocaleString([], {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit"
+                    });
+                  })()
                 : "—"}
             </span>
           </p>
