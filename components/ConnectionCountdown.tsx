@@ -82,7 +82,6 @@ export default function ConnectionCountdown({
       });
     };
 
-    
     update();
     const interval = setInterval(update, 1000);
 
