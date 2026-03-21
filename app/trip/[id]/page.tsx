@@ -175,7 +175,7 @@ export default async function TripMonitorPage({ params }: { params: { id: string
           href={`/plan/${encodeURIComponent(id)}`}
           className="inline-flex w-full items-center justify-center rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-zinc-50 ring-1 ring-white/10 hover:bg-white/15 active:bg-white/20"
         >
-          View landing plan
+          View rebooking options
         </Link>
 
       </section>
