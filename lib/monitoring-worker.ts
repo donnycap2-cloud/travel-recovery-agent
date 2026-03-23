@@ -153,19 +153,14 @@ export async function runMonitoringCycle(): Promise<MonitoringSummary> {
 
       if (previousState !== newState) {
         stateChanges++;
+      
+        await supabase.from("risk_events").insert({
+          trip_id: trip.id,
+          previous_state: previousState,
+          new_state: newState,
+          connection_time_remaining: risk.connectionTimeRemaining
+        } satisfies Partial<RiskEventRow>);
       }
-      
-      await supabase.from("debug_logs").insert({
-        message: `UPDATED STATE: ${newState}, margin=${risk.connectionTimeRemaining}`, // ✅ FIX
-        created_at: new Date().toISOString()
-      });
-      
-      await supabase.from("risk_events").insert({
-        trip_id: trip.id,
-        previous_state: previousState,
-        new_state: newState,
-        connection_time_remaining: risk.connectionTimeRemaining // ✅ FIX
-      } satisfies Partial<RiskEventRow>);
       
     // ✅ Recovery triggers
     if (newState === "likely_missed") {
