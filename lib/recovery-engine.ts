@@ -85,9 +85,18 @@ export async function generateRecoveryPlan(
       // ✅ MUST be catchable after arrival
       if (arrivalMs && depMs < arrivalMs + MIN_BUFFER) return null;
 
+      // Prefer operating flight if available
+      const operatingFlight =
+        flight.operating_flight_iata ??
+        flight.flight_iata;
+
+      const operatingAirline =
+        flight.operating_airline_iata ??
+        flight.airline_iata;
+
       return {
-        airline: flight.airline_iata ?? "Airline",
-        flightNumber: flight.flight_iata,
+        airline: operatingAirline ?? "Airline",
+        flightNumber: operatingFlight,
         departure: flight.dep_time,
         arrival: flight.arr_time,
         origin: flight.dep_iata ?? connectionAirport,
@@ -151,12 +160,30 @@ export async function generateRecoveryPlan(
   const uniqueFlights = new Map<string, RecoveryOption>();
 
   for (const f of flights) {
-    const key = `${f.departure}-${f.arrival}-${f.origin}-${f.destination}`;
+    const depMs = parseLocalTime(f.departure);
+    const arrMs = parseLocalTime(f.arrival);
+  
+    if (!depMs || !arrMs) continue;
+  
+    // 🔑 Key = actual flight instance (not flight number)
+    const key = `${f.origin}-${f.destination}-${depMs}-${arrMs}`;
+  
+    // Keep only ONE (prefer same airline if possible)
     if (!uniqueFlights.has(key)) {
       uniqueFlights.set(key, f);
+    } else {
+      const existing = uniqueFlights.get(key)!;
+  
+      const existingSame = existing.flightNumber?.startsWith(originalAirline);
+      const currentSame = f.flightNumber?.startsWith(originalAirline);
+  
+      // ✅ Prefer same airline version
+      if (currentSame && !existingSame) {
+        uniqueFlights.set(key, f);
+      }
     }
   }
-
+  
   flights = Array.from(uniqueFlights.values());
 
   // ========================

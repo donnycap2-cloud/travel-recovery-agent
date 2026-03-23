@@ -36,14 +36,6 @@ export interface LandingPlanRow {
   id: UUID;
   trip_id: UUID;
   created_at: ISODateTime;
-  primary_airline: string | null;
-  primary_flight_number: string | null;
-  primary_departure: ISODateTime | null;
-  primary_arrival: ISODateTime | null;
-  secondary_airline: string | null;
-  secondary_flight_number: string | null;
-  secondary_departure: ISODateTime | null;
-  secondary_arrival: ISODateTime | null;
   reason: string | null;
   options: {
     airline: string
